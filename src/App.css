@@ -259,6 +259,53 @@ h4 {
   font-size: 0.86rem;
 }
 
+.shopping-progress {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--panel-solid);
+}
+
+.progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.progress-head strong {
+  color: var(--text-strong);
+  font-size: 1rem;
+}
+
+.progress-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-soft);
+  border: 1px solid var(--border-soft);
+}
+
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 180ms ease;
+}
+
+.shopping-progress p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
 label {
   display: grid;
   gap: 7px;
@@ -642,6 +689,11 @@ select:focus {
 
 .product-row.checked .product-main strong {
   text-decoration: line-through;
+}
+
+.product-row.checked .product-main span {
+  color: var(--accent);
+  font-weight: 850;
 }
 
 .quantity-input {

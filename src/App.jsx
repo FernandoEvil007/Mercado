@@ -197,6 +197,7 @@ function App() {
       ),
     [items],
   );
+  const shoppingProgress = items.length ? Math.round((totals.checked / items.length) * 100) : 0;
 
   async function createCategory(event) {
     event.preventDefault();
@@ -793,9 +794,26 @@ function App() {
                 <ShoppingBasket size={20} aria-hidden="true" />
                 <div>
                   <h3>{activeList?.name || "Lista sin seleccionar"}</h3>
-                  <p>{totals.checked} productos marcados</p>
+                  <p>{totals.checked} de {items.length} productos comprados</p>
                 </div>
               </div>
+
+              <section className="shopping-progress" aria-label="Avance de compras">
+                <div className="progress-head">
+                  <span>Avance de mercado</span>
+                  <strong>{shoppingProgress}%</strong>
+                </div>
+                <div className="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingProgress}>
+                  <span style={{ width: `${shoppingProgress}%` }} />
+                </div>
+                <p>
+                  {items.length === 0
+                    ? "Agrega productos para iniciar tu recorrido."
+                    : shoppingProgress === 100
+                      ? "Todo comprado. Lista completa."
+                      : `Faltan ${items.length - totals.checked} productos por comprar.`}
+                </p>
+              </section>
 
               {items.length === 0 ? (
                 <div className="empty-state">
@@ -815,13 +833,13 @@ function App() {
                         className={item.checked ? "check-button checked" : "check-button"}
                         type="button"
                         onClick={() => updateItem(item.id, { checked: !item.checked })}
-                        aria-label={`Marcar ${item.name}`}
+                        aria-label={item.checked ? `${item.name} comprado` : `Marcar ${item.name} como comprado`}
                       >
                         <Check size={16} aria-hidden="true" />
                       </button>
                       <div className="product-main">
                         <strong>{item.name}</strong>
-                        <span>{item.category}</span>
+                        <span>{item.checked ? "Comprado" : item.category}</span>
                       </div>
                       <input
                         className="quantity-input"
