@@ -113,6 +113,14 @@ button {
   width: 100%;
 }
 
+.text-button {
+  border: 0;
+  background: transparent;
+  color: var(--accent-strong);
+  font-weight: 850;
+  text-align: center;
+}
+
 .app-header {
   display: grid;
   gap: 18px;

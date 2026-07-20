@@ -36,7 +36,7 @@ const currency = new Intl.NumberFormat("es-CO", {
 
 const fallbackUnits = ["kilo", "gramos", "litros", "unidad", "frasco", "pote", "sobre", "caja"];
 const emptyProductDraft = { name: "", brand: "", price: "", presentationQuantity: "1", unit: "unidad" };
-const sessionStorageKey = "merky-admin-session";
+const sessionStorageKey = "merky-session";
 
 const dateFormatter = new Intl.DateTimeFormat("es-CO", {
   dateStyle: "medium",
@@ -120,8 +120,11 @@ async function api(path, options = {}) {
 
 function App() {
   const [session, setSession] = useState(() => getStoredSession());
+  const [authMode, setAuthMode] = useState("login");
   const [loginUsername, setLoginUsername] = useState("Fernandoadmin");
   const [loginAccessCode, setLoginAccessCode] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPhone, setRegisterPhone] = useState("");
   const [loginStatus, setLoginStatus] = useState("");
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -329,26 +332,44 @@ function App() {
     };
   }, [inventoryProducts, items.length, lowStockProducts.length, priceHistory, products.length, totals.amount, totals.checked]);
 
-  async function loginAdmin(event) {
+  function saveSession(data) {
+    localStorage.setItem(sessionStorageKey, JSON.stringify({ token: data.token, user: data.user }));
+    setSession({ token: data.token, user: data.user });
+    setLoginAccessCode("");
+    setLoginStatus("");
+    setStatus("Cargando datos...");
+  }
+
+  async function submitAuth(event) {
     event.preventDefault();
-    setLoginStatus("Validando acceso...");
+    setLoginStatus(authMode === "register" ? "Creando tu espacio..." : "Validando acceso...");
 
     try {
+      if (authMode === "register") {
+        const data = await api("/register", {
+          method: "POST",
+          body: JSON.stringify({
+            username: loginUsername.trim(),
+            email: registerEmail.trim(),
+            phone: registerPhone.trim(),
+            password: loginAccessCode,
+          }),
+        });
+        saveSession(data);
+        return;
+      }
+
       const data = await api("/session", {
         method: "POST",
-        body: JSON.stringify({ username: loginUsername.trim(), accessCode: loginAccessCode }),
+        body: JSON.stringify({ username: loginUsername.trim(), password: loginAccessCode, accessCode: loginAccessCode }),
       });
-      localStorage.setItem(sessionStorageKey, JSON.stringify({ token: data.token, user: data.user }));
-      setSession({ token: data.token, user: data.user });
-      setLoginAccessCode("");
-      setLoginStatus("");
-      setStatus("Cargando datos...");
+      saveSession(data);
     } catch {
-      setLoginStatus("Usuario o clave incorrectos.");
+      setLoginStatus(authMode === "register" ? "No se pudo crear el usuario." : "Usuario o clave incorrectos.");
     }
   }
 
-  function logoutAdmin() {
+  function logout() {
     localStorage.removeItem(sessionStorageKey);
     setSession(null);
     setCategories([]);
@@ -918,7 +939,7 @@ function App() {
               <p className="eyebrow">Base protegida</p>
               <h1>Merky</h1>
             </div>
-            <form className="login-form" onSubmit={loginAdmin}>
+            <form className="login-form" onSubmit={submitAuth}>
               <label>
                 Usuario
                 <input
@@ -927,20 +948,54 @@ function App() {
                   autoComplete="username"
                 />
               </label>
+              {authMode === "register" ? (
+                <>
+                  <label>
+                    Correo
+                    <input
+                      value={registerEmail}
+                      onChange={(event) => setRegisterEmail(event.target.value)}
+                      type="email"
+                      autoComplete="email"
+                      placeholder="correo@ejemplo.com"
+                    />
+                  </label>
+                  <label>
+                    Telefono
+                    <input
+                      value={registerPhone}
+                      onChange={(event) => setRegisterPhone(event.target.value)}
+                      type="tel"
+                      autoComplete="tel"
+                      placeholder="Numero de contacto"
+                    />
+                  </label>
+                </>
+              ) : null}
               <label>
-                Clave de acceso
+                {authMode === "register" ? "Contraseña" : "Clave de acceso"}
                 <input
                   value={loginAccessCode}
                   onChange={(event) => setLoginAccessCode(event.target.value)}
                   type="password"
-                  autoComplete="current-password"
-                  placeholder="Clave privada"
+                  autoComplete={authMode === "register" ? "new-password" : "current-password"}
+                  placeholder={authMode === "register" ? "Minimo 6 caracteres" : "Clave privada"}
                 />
               </label>
               <button className="primary-button" type="submit">
-                Entrar como administrador
+                {authMode === "register" ? "Crear mi Merky" : "Entrar"}
               </button>
             </form>
+            <button
+              className="text-button"
+              type="button"
+              onClick={() => {
+                setAuthMode((current) => (current === "login" ? "register" : "login"));
+                setLoginStatus("");
+              }}
+            >
+              {authMode === "register" ? "Ya tengo usuario" : "Crear usuario nuevo"}
+            </button>
             {loginStatus ? <div className="status-bar">{loginStatus}</div> : null}
           </div>
         </section>
@@ -971,7 +1026,7 @@ function App() {
             <button
               className="logout-button"
               type="button"
-              onClick={logoutAdmin}
+              onClick={logout}
             >
               Salir
             </button>

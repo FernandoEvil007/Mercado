@@ -1,7 +1,8 @@
 import cors from "cors";
 import express from "express";
+import { AsyncLocalStorage } from "node:async_hooks";
 import crypto from "node:crypto";
-import { mkdir } from "node:fs/promises";
+import { copyFile, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sqlite3 from "sqlite3";
@@ -10,12 +11,16 @@ import { open } from "sqlite";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, "data");
 const dbPath = path.join(dataDir, "mercardo.sqlite");
+const authDbPath = path.join(dataDir, "auth.sqlite");
+const usersDataDir = path.join(dataDir, "users");
 const port = Number(process.env.PORT || 3001);
 const defaultUnits = ["kilo", "gramos", "litros", "unidad", "frasco", "pote", "sobre", "caja"];
 const adminUsername = process.env.ADMIN_USERNAME || "Fernandoadmin";
 const isHostedEnvironment = Boolean(process.env.RENDER || process.env.PORT || process.env.NODE_ENV === "production");
 const adminAccessCode = process.env.ADMIN_ACCESS_CODE || (isHostedEnvironment ? "" : "1234");
 const sessions = new Map();
+const appDbContext = new AsyncLocalStorage();
+const appDbCache = new Map();
 
 const seedProducts = [
   ["Despensa", "Arroz", 4500],
@@ -40,13 +45,37 @@ const seedProducts = [
 ];
 
 await mkdir(dataDir, { recursive: true });
+await mkdir(usersDataDir, { recursive: true });
 
 const db = await open({
   filename: dbPath,
   driver: sqlite3.Database,
 });
 
-await db.exec(`
+const authDb = await open({
+  filename: authDbPath,
+  driver: sqlite3.Database,
+});
+
+function getDb() {
+  return appDbContext.getStore() || db;
+}
+
+await authDb.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    password_salt TEXT NOT NULL,
+    db_file TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+await getDb().exec(`
   PRAGMA foreign_keys = ON;
 
   CREATE TABLE IF NOT EXISTS categories (
@@ -144,46 +173,46 @@ await db.exec(`
   );
 `);
 
-const productColumns = await db.all("PRAGMA table_info(products)");
+const productColumns = await getDb().all("PRAGMA table_info(products)");
 if (!productColumns.some((column) => column.name === "brand")) {
-  await db.run("ALTER TABLE products ADD COLUMN brand TEXT NOT NULL DEFAULT ''");
+  await getDb().run("ALTER TABLE products ADD COLUMN brand TEXT NOT NULL DEFAULT ''");
 }
 if (!productColumns.some((column) => column.name === "unit")) {
-  await db.run("ALTER TABLE products ADD COLUMN unit TEXT NOT NULL DEFAULT 'unidad'");
+  await getDb().run("ALTER TABLE products ADD COLUMN unit TEXT NOT NULL DEFAULT 'unidad'");
 }
 if (!productColumns.some((column) => column.name === "presentation_quantity")) {
-  await db.run("ALTER TABLE products ADD COLUMN presentation_quantity REAL NOT NULL DEFAULT 1");
+  await getDb().run("ALTER TABLE products ADD COLUMN presentation_quantity REAL NOT NULL DEFAULT 1");
 }
 
-const inventoryColumns = await db.all("PRAGMA table_info(inventory)");
+const inventoryColumns = await getDb().all("PRAGMA table_info(inventory)");
 if (!inventoryColumns.some((column) => column.name === "min_quantity")) {
-  await db.run("ALTER TABLE inventory ADD COLUMN min_quantity REAL NOT NULL DEFAULT 0");
+  await getDb().run("ALTER TABLE inventory ADD COLUMN min_quantity REAL NOT NULL DEFAULT 0");
 }
 
-const brandColumns = await db.all("PRAGMA table_info(product_brands)");
+const brandColumns = await getDb().all("PRAGMA table_info(product_brands)");
 if (!brandColumns.some((column) => column.name === "price")) {
-  await db.run("ALTER TABLE product_brands ADD COLUMN price REAL");
+  await getDb().run("ALTER TABLE product_brands ADD COLUMN price REAL");
 }
 if (!brandColumns.some((column) => column.name === "updated_at")) {
-  await db.run("ALTER TABLE product_brands ADD COLUMN updated_at TEXT");
-  await db.run("UPDATE product_brands SET updated_at = COALESCE(created_at, CURRENT_TIMESTAMP)");
+  await getDb().run("ALTER TABLE product_brands ADD COLUMN updated_at TEXT");
+  await getDb().run("UPDATE product_brands SET updated_at = COALESCE(created_at, CURRENT_TIMESTAMP)");
 }
 
-const listColumns = await db.all("PRAGMA table_info(shopping_lists)");
+const listColumns = await getDb().all("PRAGMA table_info(shopping_lists)");
 if (!listColumns.some((column) => column.name === "completed_at")) {
-  await db.run("ALTER TABLE shopping_lists ADD COLUMN completed_at TEXT");
+  await getDb().run("ALTER TABLE shopping_lists ADD COLUMN completed_at TEXT");
 }
 if (!listColumns.some((column) => column.name === "completed_total")) {
-  await db.run("ALTER TABLE shopping_lists ADD COLUMN completed_total REAL");
+  await getDb().run("ALTER TABLE shopping_lists ADD COLUMN completed_total REAL");
 }
 
 for (const [categoryName, productName, price] of seedProducts) {
-  const category = await db.get("SELECT id FROM categories WHERE name = ?", categoryName);
+  const category = await getDb().get("SELECT id FROM categories WHERE name = ?", categoryName);
   const categoryId =
     category?.id ??
-    (await db.run("INSERT INTO categories (name) VALUES (?)", categoryName)).lastID;
+    (await getDb().run("INSERT INTO categories (name) VALUES (?)", categoryName)).lastID;
 
-  await db.run(
+  await getDb().run(
     "INSERT OR IGNORE INTO products (category_id, name, price) VALUES (?, ?, ?)",
     categoryId,
     productName,
@@ -192,20 +221,20 @@ for (const [categoryName, productName, price] of seedProducts) {
 }
 
 for (const unit of defaultUnits) {
-  await db.run("INSERT OR IGNORE INTO measurement_units (name) VALUES (?)", unit);
+  await getDb().run("INSERT OR IGNORE INTO measurement_units (name) VALUES (?)", unit);
 }
 
-const historyCount = await db.get("SELECT COUNT(*) AS total FROM price_history");
+const historyCount = await getDb().get("SELECT COUNT(*) AS total FROM price_history");
 if (historyCount.total === 0) {
-  await db.run(`
+  await getDb().run(`
     INSERT INTO price_history (product_id, old_price, new_price)
     SELECT id, NULL, price FROM products
   `);
 }
 
-const listCount = await db.get("SELECT COUNT(*) AS total FROM shopping_lists");
+const listCount = await getDb().get("SELECT COUNT(*) AS total FROM shopping_lists");
 if (listCount.total === 0) {
-  await db.run("INSERT INTO shopping_lists (name) VALUES (?)", "Mercado principal");
+  await getDb().run("INSERT INTO shopping_lists (name) VALUES (?)", "Mercado principal");
 }
 
 const app = express();
@@ -218,24 +247,109 @@ function isValidSecret(value, expected) {
   return incoming.length === current.length && crypto.timingSafeEqual(incoming, current);
 }
 
-function createSession(username) {
+function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
+  const hash = crypto.pbkdf2Sync(String(password), salt, 120000, 32, "sha256").toString("hex");
+  return { hash, salt };
+}
+
+function isValidPassword(password, hash, salt) {
+  const attempted = hashPassword(password, salt).hash;
+  return isValidSecret(attempted, hash);
+}
+
+function normalizeUsername(value) {
+  return normalizeText(value).replace(/\s+/g, "");
+}
+
+function getSafeDbFilename(username, userId) {
+  const safeUsername = username
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  return `${userId}-${safeUsername || "usuario"}.sqlite`;
+}
+
+function getUserDbPath(dbFile) {
+  return path.join(usersDataDir, path.basename(dbFile));
+}
+
+async function sanitizeUserDatabase(userDbPath) {
+  const userDb = await open({
+    filename: userDbPath,
+    driver: sqlite3.Database,
+  });
+
+  try {
+    await userDb.exec(`
+      PRAGMA foreign_keys = ON;
+      DELETE FROM purchase_items;
+      DELETE FROM purchase_records;
+      DELETE FROM list_items;
+      DELETE FROM shopping_lists;
+      DELETE FROM inventory;
+      DELETE FROM price_history;
+      DELETE FROM product_brands;
+      UPDATE products SET price = 0, brand = '';
+      INSERT INTO shopping_lists (name) VALUES ('Mercado principal');
+    `);
+  } finally {
+    await userDb.close();
+  }
+}
+
+async function createUserDatabase(username, userId) {
+  const dbFile = getSafeDbFilename(username, userId);
+  const userDbPath = getUserDbPath(dbFile);
+  await copyFile(dbPath, userDbPath);
+  await sanitizeUserDatabase(userDbPath);
+  return dbFile;
+}
+
+async function openSessionDatabase(session) {
+  if (session.role === "admin") {
+    return db;
+  }
+
+  const userDbPath = getUserDbPath(session.dbFile);
+  if (!appDbCache.has(userDbPath)) {
+    appDbCache.set(
+      userDbPath,
+      await open({
+        filename: userDbPath,
+        driver: sqlite3.Database,
+      }),
+    );
+  }
+
+  return appDbCache.get(userDbPath);
+}
+
+function createSession(user) {
   const token = crypto.randomBytes(32).toString("hex");
-  sessions.set(token, { username, createdAt: Date.now() });
+  sessions.set(token, { ...user, createdAt: Date.now() });
   return token;
 }
 
-function requireAdmin(request, response, next) {
+async function requireSession(request, response, next) {
   const header = request.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
   const session = sessions.get(token);
 
-  if (!session || session.username !== adminUsername) {
-    response.status(401).json({ error: "Admin session required." });
+  if (!session) {
+    response.status(401).json({ error: "Session required." });
     return;
   }
 
-  request.admin = session;
-  next();
+  try {
+    const sessionDb = await openSessionDatabase(session);
+    request.session = session;
+    appDbContext.run(sessionDb, () => next());
+  } catch {
+    response.status(500).json({ error: "Could not open user database." });
+  }
 }
 
 app.get("/api/health", async (_request, response) => {
@@ -245,24 +359,87 @@ app.get("/api/health", async (_request, response) => {
   });
 });
 
-app.post("/api/session", (request, response) => {
+app.post("/api/session", async (request, response) => {
   const username = String(request.body.username || "").trim();
-  const accessCode = String(request.body.accessCode || "");
+  const secret = String(request.body.password || request.body.accessCode || "");
 
-  if (!adminAccessCode) {
+  if (username === adminUsername && !adminAccessCode) {
     response.status(503).json({ error: "Admin access code is not configured." });
     return;
   }
 
-  if (username !== adminUsername || !isValidSecret(accessCode, adminAccessCode)) {
-    response.status(401).json({ error: "Invalid admin credentials." });
+  if (username === adminUsername && isValidSecret(secret, adminAccessCode)) {
+    response.status(201).json({
+      token: createSession({ username, role: "admin", dbFile: path.basename(dbPath) }),
+      user: { username, role: "admin" },
+    });
     return;
   }
 
-  response.status(201).json({ token: createSession(username), user: { username } });
+  const user = await authDb.get(
+    "SELECT id, username, password_hash AS passwordHash, password_salt AS passwordSalt, db_file AS dbFile, role FROM users WHERE username = ?",
+    username,
+  );
+  if (!user || !isValidPassword(secret, user.passwordHash, user.passwordSalt)) {
+    response.status(401).json({ error: "Invalid credentials." });
+    return;
+  }
+
+  response.status(201).json({
+    token: createSession({ id: user.id, username: user.username, role: user.role, dbFile: user.dbFile }),
+    user: { username: user.username, role: user.role },
+  });
 });
 
-app.use("/api", requireAdmin);
+app.post("/api/register", async (request, response) => {
+  const username = normalizeUsername(request.body.username);
+  const email = normalizeText(request.body.email);
+  const phone = normalizeText(request.body.phone);
+  const password = String(request.body.password || "");
+
+  if (!username || !email || !phone || password.length < 6) {
+    response.status(400).json({ error: "Username, email, phone and a 6 character password are required." });
+    return;
+  }
+
+  if (username.toLowerCase() === adminUsername.toLowerCase()) {
+    response.status(409).json({ error: "That username is reserved." });
+    return;
+  }
+
+  const duplicate = await authDb.get("SELECT id FROM users WHERE username = ?", username);
+  if (duplicate) {
+    response.status(409).json({ error: "Username already exists." });
+    return;
+  }
+
+  const { hash, salt } = hashPassword(password);
+  const result = await authDb.run(
+    "INSERT INTO users (username, email, phone, password_hash, password_salt, db_file) VALUES (?, ?, ?, ?, ?, ?)",
+    username,
+    email,
+    phone,
+    hash,
+    salt,
+    "pending.sqlite",
+  );
+
+  try {
+    const dbFile = await createUserDatabase(username, result.lastID);
+    await authDb.run("UPDATE users SET db_file = ? WHERE id = ?", dbFile, result.lastID);
+
+    response.status(201).json({
+      token: createSession({ id: result.lastID, username, role: "user", dbFile }),
+      user: { username, role: "user" },
+    });
+  } catch (error) {
+    await authDb.run("DELETE FROM users WHERE id = ?", result.lastID);
+    await rm(getUserDbPath(getSafeDbFilename(username, result.lastID)), { force: true });
+    response.status(500).json({ error: "Could not create user database." });
+  }
+});
+
+app.use("/api", requireSession);
 
 function normalizeText(value) {
   return String(value || "").trim();
@@ -274,7 +451,7 @@ function normalizeUnitName(value) {
 
 async function ensureUnit(value) {
   const unit = normalizeUnitName(value) || "unidad";
-  await db.run("INSERT OR IGNORE INTO measurement_units (name) VALUES (?)", unit);
+  await getDb().run("INSERT OR IGNORE INTO measurement_units (name) VALUES (?)", unit);
   return unit;
 }
 
@@ -284,7 +461,7 @@ function normalizePresentationQuantity(value) {
 }
 
 async function getUnits() {
-  return db.all("SELECT id, name FROM measurement_units ORDER BY name");
+  return getDb().all("SELECT id, name FROM measurement_units ORDER BY name");
 }
 
 async function saveBrandPrice(productId, name, price) {
@@ -293,7 +470,7 @@ async function saveBrandPrice(productId, name, price) {
     return;
   }
 
-  await db.run(
+  await getDb().run(
     "INSERT INTO product_brands (product_id, name, price, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(product_id, name) DO UPDATE SET price = excluded.price, updated_at = CURRENT_TIMESTAMP",
     productId,
     brand,
@@ -302,7 +479,7 @@ async function saveBrandPrice(productId, name, price) {
 }
 
 async function getProducts() {
-  const products = await db.all(`
+  const products = await getDb().all(`
     SELECT
       products.id,
       products.name,
@@ -322,7 +499,7 @@ async function getProducts() {
     ) AS brand_list ON brand_list.product_id = products.id
     ORDER BY categories.name, products.name
   `);
-  const brandRows = await db.all(`
+  const brandRows = await getDb().all(`
     SELECT product_id AS productId, name, price, updated_at AS updatedAt
     FROM product_brands
     ORDER BY name COLLATE NOCASE
@@ -346,7 +523,7 @@ async function getProducts() {
 }
 
 async function getListItems(listId) {
-  return db.all(
+  return getDb().all(
     `
       SELECT
         list_items.id,
@@ -371,7 +548,7 @@ async function getListItems(listId) {
 }
 
 async function getInventory() {
-  return db.all(`
+  return getDb().all(`
     SELECT
       inventory.id,
       inventory.product_id AS productId,
@@ -391,7 +568,7 @@ async function getInventory() {
 }
 
 async function getPriceHistory() {
-  return db.all(`
+  return getDb().all(`
     SELECT
       price_history.id,
       price_history.product_id AS productId,
@@ -409,7 +586,7 @@ async function getPriceHistory() {
 }
 
 async function getPurchaseRecords() {
-  const records = await db.all(`
+  const records = await getDb().all(`
     SELECT
       id,
       list_id AS listId,
@@ -421,7 +598,7 @@ async function getPurchaseRecords() {
     ORDER BY completed_at DESC, id DESC
     LIMIT 40
   `);
-  const items = await db.all(`
+  const items = await getDb().all(`
     SELECT
       record_id AS recordId,
       product_name AS productName,
@@ -480,9 +657,9 @@ async function getSummary(activeListId = null) {
 
 app.get("/api/bootstrap", async (_request, response) => {
   const [categories, products, lists, priceHistory, inventory, units, purchases] = await Promise.all([
-    db.all("SELECT id, name FROM categories ORDER BY name"),
+    getDb().all("SELECT id, name FROM categories ORDER BY name"),
     getProducts(),
-    db.all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
+    getDb().all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
     getPriceHistory(),
     getInventory(),
     getUnits(),
@@ -514,16 +691,16 @@ app.get("/api/export", async (_request, response) => {
     listItems,
     units,
   ] = await Promise.all([
-    db.all("SELECT * FROM categories ORDER BY name"),
-    db.all("SELECT * FROM products ORDER BY name"),
-    db.all("SELECT * FROM product_brands ORDER BY product_id, name"),
-    db.all("SELECT * FROM inventory ORDER BY product_id"),
-    db.all("SELECT * FROM price_history ORDER BY changed_at DESC, id DESC"),
-    db.all("SELECT * FROM purchase_records ORDER BY completed_at DESC, id DESC"),
-    db.all("SELECT * FROM purchase_items ORDER BY record_id, category, product_name"),
-    db.all("SELECT * FROM shopping_lists ORDER BY id DESC"),
-    db.all("SELECT * FROM list_items ORDER BY list_id, id"),
-    db.all("SELECT * FROM measurement_units ORDER BY name"),
+    getDb().all("SELECT * FROM categories ORDER BY name"),
+    getDb().all("SELECT * FROM products ORDER BY name"),
+    getDb().all("SELECT * FROM product_brands ORDER BY product_id, name"),
+    getDb().all("SELECT * FROM inventory ORDER BY product_id"),
+    getDb().all("SELECT * FROM price_history ORDER BY changed_at DESC, id DESC"),
+    getDb().all("SELECT * FROM purchase_records ORDER BY completed_at DESC, id DESC"),
+    getDb().all("SELECT * FROM purchase_items ORDER BY record_id, category, product_name"),
+    getDb().all("SELECT * FROM shopping_lists ORDER BY id DESC"),
+    getDb().all("SELECT * FROM list_items ORDER BY list_id, id"),
+    getDb().all("SELECT * FROM measurement_units ORDER BY name"),
   ]);
 
   response.setHeader("Content-Type", "application/json");
@@ -571,19 +748,19 @@ app.patch("/api/units/:unitId", async (request, response) => {
     return;
   }
 
-  const currentUnit = await db.get("SELECT id, name FROM measurement_units WHERE id = ?", unitId);
+  const currentUnit = await getDb().get("SELECT id, name FROM measurement_units WHERE id = ?", unitId);
   if (!currentUnit) {
     response.status(404).json({ error: "Unit not found." });
     return;
   }
 
-  const existingUnit = await db.get("SELECT id, name FROM measurement_units WHERE name = ?", name);
+  const existingUnit = await getDb().get("SELECT id, name FROM measurement_units WHERE name = ?", name);
   if (existingUnit && existingUnit.id !== unitId) {
-    await db.run("UPDATE products SET unit = ? WHERE unit = ?", existingUnit.name, currentUnit.name);
-    await db.run("DELETE FROM measurement_units WHERE id = ?", unitId);
+    await getDb().run("UPDATE products SET unit = ? WHERE unit = ?", existingUnit.name, currentUnit.name);
+    await getDb().run("DELETE FROM measurement_units WHERE id = ?", unitId);
   } else {
-    await db.run("UPDATE measurement_units SET name = ? WHERE id = ?", name, unitId);
-    await db.run("UPDATE products SET unit = ? WHERE unit = ?", name, currentUnit.name);
+    await getDb().run("UPDATE measurement_units SET name = ? WHERE id = ?", name, unitId);
+    await getDb().run("UPDATE products SET unit = ? WHERE unit = ?", name, currentUnit.name);
   }
 
   response.json({
@@ -600,8 +777,8 @@ app.post("/api/categories", async (request, response) => {
     return;
   }
 
-  await db.run("INSERT OR IGNORE INTO categories (name) VALUES (?)", name);
-  const category = await db.get("SELECT id, name FROM categories WHERE name = ?", name);
+  await getDb().run("INSERT OR IGNORE INTO categories (name) VALUES (?)", name);
+  const category = await getDb().get("SELECT id, name FROM categories WHERE name = ?", name);
   response.status(201).json(category);
 });
 
@@ -614,13 +791,13 @@ app.patch("/api/categories/:categoryId", async (request, response) => {
     return;
   }
 
-  const category = await db.get("SELECT id, name FROM categories WHERE id = ?", categoryId);
+  const category = await getDb().get("SELECT id, name FROM categories WHERE id = ?", categoryId);
   if (!category) {
     response.status(404).json({ error: "Category not found." });
     return;
   }
 
-  const duplicate = await db.get(
+  const duplicate = await getDb().get(
     "SELECT id FROM categories WHERE name = ? AND id <> ?",
     name,
     categoryId,
@@ -630,10 +807,10 @@ app.patch("/api/categories/:categoryId", async (request, response) => {
     return;
   }
 
-  await db.run("UPDATE categories SET name = ? WHERE id = ?", name, categoryId);
+  await getDb().run("UPDATE categories SET name = ? WHERE id = ?", name, categoryId);
 
   response.json({
-    categories: await db.all("SELECT id, name FROM categories ORDER BY name"),
+    categories: await getDb().all("SELECT id, name FROM categories ORDER BY name"),
     products: await getProducts(),
     priceHistory: await getPriceHistory(),
     inventory: await getInventory(),
@@ -653,12 +830,12 @@ app.post("/api/products", async (request, response) => {
     return;
   }
 
-  const existing = await db.get(
+  const existing = await getDb().get(
     "SELECT id, price FROM products WHERE category_id = ? AND name = ?",
     categoryId,
     name,
   );
-  await db.run(
+  await getDb().run(
     "INSERT INTO products (category_id, name, brand, price, unit, presentation_quantity) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(category_id, name) DO UPDATE SET brand = excluded.brand, price = excluded.price, unit = excluded.unit, presentation_quantity = excluded.presentation_quantity",
     categoryId,
     name,
@@ -668,14 +845,14 @@ app.post("/api/products", async (request, response) => {
     presentationQuantity,
   );
 
-  const product = await db.get(
+  const product = await getDb().get(
     "SELECT id FROM products WHERE category_id = ? AND name = ?",
     categoryId,
     name,
   );
 
   if (!existing || existing.price !== price) {
-    await db.run(
+    await getDb().run(
       "INSERT INTO price_history (product_id, old_price, new_price) VALUES (?, ?, ?)",
       product.id,
       existing?.price ?? null,
@@ -720,20 +897,20 @@ app.patch("/api/products/:productId", async (request, response) => {
     return;
   }
 
-  const product = await db.get("SELECT id, name, brand, price, category_id AS categoryId FROM products WHERE id = ?", productId);
+  const product = await getDb().get("SELECT id, name, brand, price, category_id AS categoryId FROM products WHERE id = ?", productId);
   if (!product) {
     response.status(404).json({ error: "Product not found." });
     return;
   }
 
   if (hasCategory) {
-    const category = await db.get("SELECT id FROM categories WHERE id = ?", categoryId);
+    const category = await getDb().get("SELECT id FROM categories WHERE id = ?", categoryId);
     if (!category) {
       response.status(404).json({ error: "Category not found." });
       return;
     }
 
-    const duplicate = await db.get(
+    const duplicate = await getDb().get(
       "SELECT id FROM products WHERE category_id = ? AND name = ? AND id <> ?",
       categoryId,
       product.name,
@@ -744,12 +921,12 @@ app.patch("/api/products/:productId", async (request, response) => {
       return;
     }
 
-    await db.run("UPDATE products SET category_id = ? WHERE id = ?", categoryId, productId);
+    await getDb().run("UPDATE products SET category_id = ? WHERE id = ?", categoryId, productId);
   }
 
   if (hasName) {
     const targetCategoryId = hasCategory ? categoryId : product.categoryId;
-    const duplicate = await db.get(
+    const duplicate = await getDb().get(
       "SELECT id FROM products WHERE category_id = ? AND name = ? AND id <> ?",
       targetCategoryId,
       name,
@@ -760,18 +937,18 @@ app.patch("/api/products/:productId", async (request, response) => {
       return;
     }
 
-    await db.run("UPDATE products SET name = ? WHERE id = ?", name, productId);
+    await getDb().run("UPDATE products SET name = ? WHERE id = ?", name, productId);
   }
 
   if (hasPrice) {
-    await db.run("UPDATE products SET price = ? WHERE id = ?", price, productId);
-    await db.run(
+    await getDb().run("UPDATE products SET price = ? WHERE id = ?", price, productId);
+    await getDb().run(
       "UPDATE list_items SET price_snapshot = ? WHERE product_id = ? AND checked = 0",
       price,
       productId,
     );
     if (product.price !== price) {
-      await db.run(
+      await getDb().run(
         "INSERT INTO price_history (product_id, old_price, new_price) VALUES (?, ?, ?)",
         productId,
         product.price,
@@ -781,7 +958,7 @@ app.patch("/api/products/:productId", async (request, response) => {
   }
 
   if (hasBrand) {
-    await db.run("UPDATE products SET brand = ? WHERE id = ?", brand, productId);
+    await getDb().run("UPDATE products SET brand = ? WHERE id = ?", brand, productId);
   }
 
   const finalBrand = hasBrand ? brand : product.brand;
@@ -791,11 +968,11 @@ app.patch("/api/products/:productId", async (request, response) => {
   }
 
   if (hasUnit) {
-    await db.run("UPDATE products SET unit = ? WHERE id = ?", unit, productId);
+    await getDb().run("UPDATE products SET unit = ? WHERE id = ?", unit, productId);
   }
 
   if (hasPresentationQuantity) {
-    await db.run("UPDATE products SET presentation_quantity = ? WHERE id = ?", presentationQuantity, productId);
+    await getDb().run("UPDATE products SET presentation_quantity = ? WHERE id = ?", presentationQuantity, productId);
   }
 
   response.json({ products: await getProducts(), priceHistory: await getPriceHistory(), inventory: await getInventory() });
@@ -809,13 +986,13 @@ app.delete("/api/products/:productId", async (request, response) => {
     return;
   }
 
-  const product = await db.get("SELECT id FROM products WHERE id = ?", productId);
+  const product = await getDb().get("SELECT id FROM products WHERE id = ?", productId);
   if (!product) {
     response.status(404).json({ error: "Product not found." });
     return;
   }
 
-  await db.run("DELETE FROM products WHERE id = ?", productId);
+  await getDb().run("DELETE FROM products WHERE id = ?", productId);
 
   response.json({
     products: await getProducts(),
@@ -841,17 +1018,17 @@ app.patch("/api/inventory/:productId", async (request, response) => {
     return;
   }
 
-  const product = await db.get("SELECT id FROM products WHERE id = ?", productId);
+  const product = await getDb().get("SELECT id FROM products WHERE id = ?", productId);
   if (!product) {
     response.status(404).json({ error: "Product not found." });
     return;
   }
 
-  const current = await db.get("SELECT quantity, min_quantity AS minQuantity FROM inventory WHERE product_id = ?", productId);
+  const current = await getDb().get("SELECT quantity, min_quantity AS minQuantity FROM inventory WHERE product_id = ?", productId);
   const nextQuantity = hasQuantity ? quantity : current?.quantity ?? 0;
   const nextMinQuantity = hasMinQuantity ? minQuantity : current?.minQuantity ?? 0;
 
-  await db.run(
+  await getDb().run(
     "INSERT INTO inventory (product_id, quantity, min_quantity, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(product_id) DO UPDATE SET quantity = excluded.quantity, min_quantity = excluded.min_quantity, updated_at = CURRENT_TIMESTAMP",
     productId,
     nextQuantity,
@@ -868,8 +1045,8 @@ app.post("/api/lists", async (request, response) => {
     return;
   }
 
-  const result = await db.run("INSERT INTO shopping_lists (name) VALUES (?)", name);
-  const list = await db.get(
+  const result = await getDb().run("INSERT INTO shopping_lists (name) VALUES (?)", name);
+  const list = await getDb().get(
     "SELECT id, name, created_at AS createdAt FROM shopping_lists WHERE id = ?",
     result.lastID,
   );
@@ -883,7 +1060,7 @@ app.get("/api/lists/:listId/items", async (request, response) => {
 
 app.post("/api/lists/:listId/complete", async (request, response) => {
   const listId = Number(request.params.listId);
-  const list = await db.get("SELECT id, name FROM shopping_lists WHERE id = ?", listId);
+  const list = await getDb().get("SELECT id, name FROM shopping_lists WHERE id = ?", listId);
 
   if (!list) {
     response.status(404).json({ error: "List not found." });
@@ -897,7 +1074,7 @@ app.post("/api/lists/:listId/complete", async (request, response) => {
   }
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const result = await db.run(
+  const result = await getDb().run(
     "INSERT INTO purchase_records (list_id, list_name, total, item_count, completed_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
     listId,
     list.name,
@@ -906,7 +1083,7 @@ app.post("/api/lists/:listId/complete", async (request, response) => {
   );
 
   for (const item of items) {
-    await db.run(
+    await getDb().run(
       "INSERT INTO purchase_items (record_id, product_id, product_name, brand, category, quantity, price, checked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       result.lastID,
       item.productId,
@@ -919,7 +1096,7 @@ app.post("/api/lists/:listId/complete", async (request, response) => {
     );
   }
 
-  await db.run(
+  await getDb().run(
     "UPDATE shopping_lists SET completed_at = CURRENT_TIMESTAMP, completed_total = ? WHERE id = ?",
     total,
     listId,
@@ -927,34 +1104,34 @@ app.post("/api/lists/:listId/complete", async (request, response) => {
 
   response.status(201).json({
     purchases: await getPurchaseRecords(),
-    lists: await db.all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
+    lists: await getDb().all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
     summary: await getSummary(listId),
   });
 });
 
 app.post("/api/lists/:listId/clear", async (request, response) => {
   const listId = Number(request.params.listId);
-  const list = await db.get("SELECT id FROM shopping_lists WHERE id = ?", listId);
+  const list = await getDb().get("SELECT id FROM shopping_lists WHERE id = ?", listId);
 
   if (!list) {
     response.status(404).json({ error: "List not found." });
     return;
   }
 
-  await db.run("DELETE FROM list_items WHERE list_id = ?", listId);
-  await db.run("UPDATE shopping_lists SET completed_at = NULL, completed_total = NULL WHERE id = ?", listId);
+  await getDb().run("DELETE FROM list_items WHERE list_id = ?", listId);
+  await getDb().run("UPDATE shopping_lists SET completed_at = NULL, completed_total = NULL WHERE id = ?", listId);
 
   response.json({
     items: [],
-    lists: await db.all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
+    lists: await getDb().all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
   });
 });
 
 app.delete("/api/lists/:listId", async (request, response) => {
   const listId = Number(request.params.listId);
-  await db.run("DELETE FROM shopping_lists WHERE id = ?", listId);
+  await getDb().run("DELETE FROM shopping_lists WHERE id = ?", listId);
 
-  const lists = await db.all(
+  const lists = await getDb().all(
     "SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC",
   );
   const activeListId = lists[0]?.id ?? null;
@@ -967,23 +1144,23 @@ app.post("/api/lists/:listId/items", async (request, response) => {
   const listId = Number(request.params.listId);
   const productId = Number(request.body.productId);
   const quantity = Math.max(1, Number(request.body.quantity || 1));
-  const product = await db.get("SELECT price FROM products WHERE id = ?", productId);
+  const product = await getDb().get("SELECT price FROM products WHERE id = ?", productId);
 
   if (!listId || !productId || !product) {
     response.status(400).json({ error: "Valid list and product are required." });
     return;
   }
 
-  const existing = await db.get(
+  const existing = await getDb().get(
     "SELECT id FROM list_items WHERE list_id = ? AND product_id = ? AND checked = 0",
     listId,
     productId,
   );
 
   if (existing) {
-    await db.run("UPDATE list_items SET quantity = quantity + ? WHERE id = ?", quantity, existing.id);
+    await getDb().run("UPDATE list_items SET quantity = quantity + ? WHERE id = ?", quantity, existing.id);
   } else {
-    await db.run(
+    await getDb().run(
       "INSERT INTO list_items (list_id, product_id, quantity, price_snapshot) VALUES (?, ?, ?, ?)",
       listId,
       productId,
@@ -997,7 +1174,7 @@ app.post("/api/lists/:listId/items", async (request, response) => {
 
 app.patch("/api/list-items/:itemId", async (request, response) => {
   const itemId = Number(request.params.itemId);
-  const item = await db.get("SELECT list_id AS listId FROM list_items WHERE id = ?", itemId);
+  const item = await getDb().get("SELECT list_id AS listId FROM list_items WHERE id = ?", itemId);
 
   if (!item) {
     response.status(404).json({ error: "Item not found." });
@@ -1005,12 +1182,12 @@ app.patch("/api/list-items/:itemId", async (request, response) => {
   }
 
   if (typeof request.body.checked === "boolean") {
-    await db.run("UPDATE list_items SET checked = ? WHERE id = ?", request.body.checked ? 1 : 0, itemId);
+    await getDb().run("UPDATE list_items SET checked = ? WHERE id = ?", request.body.checked ? 1 : 0, itemId);
   }
 
   if (request.body.quantity !== undefined) {
     const quantity = Math.max(1, Number(request.body.quantity));
-    await db.run("UPDATE list_items SET quantity = ? WHERE id = ?", quantity, itemId);
+    await getDb().run("UPDATE list_items SET quantity = ? WHERE id = ?", quantity, itemId);
   }
 
   if (request.body.price !== undefined) {
@@ -1020,7 +1197,7 @@ app.patch("/api/list-items/:itemId", async (request, response) => {
       return;
     }
 
-    await db.run("UPDATE list_items SET price_snapshot = ? WHERE id = ?", price, itemId);
+    await getDb().run("UPDATE list_items SET price_snapshot = ? WHERE id = ?", price, itemId);
   }
 
   response.json({ items: await getListItems(item.listId) });
@@ -1028,14 +1205,14 @@ app.patch("/api/list-items/:itemId", async (request, response) => {
 
 app.delete("/api/list-items/:itemId", async (request, response) => {
   const itemId = Number(request.params.itemId);
-  const item = await db.get("SELECT list_id AS listId FROM list_items WHERE id = ?", itemId);
+  const item = await getDb().get("SELECT list_id AS listId FROM list_items WHERE id = ?", itemId);
 
   if (!item) {
     response.status(404).json({ error: "Item not found." });
     return;
   }
 
-  await db.run("DELETE FROM list_items WHERE id = ?", itemId);
+  await getDb().run("DELETE FROM list_items WHERE id = ?", itemId);
   response.json({ items: await getListItems(item.listId) });
 });
 
@@ -1052,3 +1229,4 @@ app.use((request, response, next) => {
 app.listen(port, () => {
   console.log(`Merky API running on http://127.0.0.1:${port}`);
 });
+
