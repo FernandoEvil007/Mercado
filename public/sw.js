@@ -1,4 +1,4 @@
-const CACHE_NAME = "merky-app-v2";
+const CACHE_NAME = "merky-app-v3";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",

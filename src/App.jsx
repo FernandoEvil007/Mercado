@@ -1092,6 +1092,20 @@ function App() {
             <p className="eyebrow">Lista activa</p>
             <h2>{activeList?.name || "Sin lista"}</h2>
           </div>
+          <div className="header-metrics" aria-label="Estado rapido de la lista">
+            <article>
+              <span>Total</span>
+              <strong>{currency.format(totals.amount)}</strong>
+            </article>
+            <article>
+              <span>Avance</span>
+              <strong>{shoppingProgress}%</strong>
+            </article>
+            <article className={lowStockProducts.length ? "warning" : ""}>
+              <span>Alertas</span>
+              <strong>{lowStockProducts.length}</strong>
+            </article>
+          </div>
         </header>
 
         <section className="totals" aria-label="Resumen">
