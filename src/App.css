@@ -653,6 +653,12 @@ select:focus {
   text-align: right;
 }
 
+.price-editor select {
+  min-height: 38px;
+  padding: 0 9px;
+  border-radius: 10px;
+}
+
 .catalog-row strong,
 .product-main strong,
 .catalog-row span,
@@ -864,7 +870,7 @@ select:focus {
 
 @media (min-width: 520px) {
   .inventory-row {
-    grid-template-columns: minmax(0, 1fr) minmax(118px, 0.55fr) minmax(142px, 0.7fr);
+    grid-template-columns: minmax(0, 1fr) minmax(96px, 0.45fr) minmax(96px, 0.45fr) minmax(122px, 0.6fr);
   }
 }
 
@@ -933,11 +939,11 @@ select:focus {
   }
 
   .category-product-form {
-    grid-template-columns: minmax(0, 1fr) 110px;
+    grid-template-columns: minmax(0, 1fr) 110px 92px;
   }
 
   .category-product-form select {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .category-product-form .primary-button {

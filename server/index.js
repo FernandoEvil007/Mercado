@@ -55,6 +55,7 @@ await db.exec(`
     name TEXT NOT NULL,
     price INTEGER NOT NULL DEFAULT 0,
     unit TEXT NOT NULL DEFAULT 'unidad',
+    presentation_quantity REAL NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
     UNIQUE(category_id, name)
@@ -104,6 +105,9 @@ await db.exec(`
 const productColumns = await db.all("PRAGMA table_info(products)");
 if (!productColumns.some((column) => column.name === "unit")) {
   await db.run("ALTER TABLE products ADD COLUMN unit TEXT NOT NULL DEFAULT 'unidad'");
+}
+if (!productColumns.some((column) => column.name === "presentation_quantity")) {
+  await db.run("ALTER TABLE products ADD COLUMN presentation_quantity REAL NOT NULL DEFAULT 1");
 }
 
 for (const [categoryName, productName, price] of seedProducts) {
@@ -155,13 +159,25 @@ async function ensureUnit(value) {
   return unit;
 }
 
+function normalizePresentationQuantity(value) {
+  const quantity = Number(value);
+  return Number.isNaN(quantity) || quantity <= 0 ? 1 : quantity;
+}
+
 async function getUnits() {
   return db.all("SELECT id, name FROM measurement_units ORDER BY name");
 }
 
 async function getProducts() {
   return db.all(`
-    SELECT products.id, products.name, products.price, products.unit, categories.id AS categoryId, categories.name AS category
+    SELECT
+      products.id,
+      products.name,
+      products.price,
+      products.unit,
+      products.presentation_quantity AS presentationQuantity,
+      categories.id AS categoryId,
+      categories.name AS category
     FROM products
     JOIN categories ON categories.id = products.category_id
     ORDER BY categories.name, products.name
@@ -180,6 +196,7 @@ async function getListItems(listId) {
         list_items.price_snapshot AS price,
         products.name,
         products.unit,
+        products.presentation_quantity AS presentationQuantity,
         categories.name AS category
       FROM list_items
       JOIN products ON products.id = list_items.product_id
@@ -200,6 +217,7 @@ async function getInventory() {
       inventory.updated_at AS updatedAt,
       products.name,
       products.unit,
+      products.presentation_quantity AS presentationQuantity,
       categories.name AS category
     FROM inventory
     JOIN products ON products.id = inventory.product_id
@@ -309,6 +327,7 @@ app.post("/api/products", async (request, response) => {
   const categoryId = Number(request.body.categoryId);
   const price = Number(request.body.price);
   const unit = await ensureUnit(request.body.unit);
+  const presentationQuantity = normalizePresentationQuantity(request.body.presentationQuantity);
 
   if (!name || !categoryId || Number.isNaN(price) || price < 0) {
     response.status(400).json({ error: "Valid name, category and price are required." });
@@ -323,11 +342,12 @@ app.post("/api/products", async (request, response) => {
   const roundedPrice = Math.round(price);
 
   await db.run(
-    "INSERT INTO products (category_id, name, price, unit) VALUES (?, ?, ?, ?) ON CONFLICT(category_id, name) DO UPDATE SET price = excluded.price, unit = excluded.unit",
+    "INSERT INTO products (category_id, name, price, unit, presentation_quantity) VALUES (?, ?, ?, ?, ?) ON CONFLICT(category_id, name) DO UPDATE SET price = excluded.price, unit = excluded.unit, presentation_quantity = excluded.presentation_quantity",
     categoryId,
     name,
     roundedPrice,
     unit,
+    presentationQuantity,
   );
 
   const product = await db.get(
@@ -356,10 +376,12 @@ app.patch("/api/products/:productId", async (request, response) => {
   const productId = Number(request.params.productId);
   const hasPrice = request.body.price !== undefined;
   const hasUnit = request.body.unit !== undefined;
+  const hasPresentationQuantity = request.body.presentationQuantity !== undefined;
   const price = Number(request.body.price);
   const unit = hasUnit ? await ensureUnit(request.body.unit) : "unidad";
+  const presentationQuantity = normalizePresentationQuantity(request.body.presentationQuantity);
 
-  if (!productId || (!hasPrice && !hasUnit) || (hasPrice && (Number.isNaN(price) || price < 0))) {
+  if (!productId || (!hasPrice && !hasUnit && !hasPresentationQuantity) || (hasPrice && (Number.isNaN(price) || price < 0))) {
     response.status(400).json({ error: "Valid product update is required." });
     return;
   }
@@ -390,6 +412,10 @@ app.patch("/api/products/:productId", async (request, response) => {
 
   if (hasUnit) {
     await db.run("UPDATE products SET unit = ? WHERE id = ?", unit, productId);
+  }
+
+  if (hasPresentationQuantity) {
+    await db.run("UPDATE products SET presentation_quantity = ? WHERE id = ?", presentationQuantity, productId);
   }
 
   response.json({ products: await getProducts(), priceHistory: await getPriceHistory(), inventory: await getInventory() });

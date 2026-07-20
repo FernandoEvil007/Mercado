@@ -29,7 +29,7 @@ const currency = new Intl.NumberFormat("es-CO", {
 });
 
 const fallbackUnits = ["kilo", "gramos", "litros", "unidad", "frasco", "pote", "sobre", "caja"];
-const emptyProductDraft = { name: "", price: "", unit: "unidad" };
+const emptyProductDraft = { name: "", price: "", presentationQuantity: "1", unit: "unidad" };
 
 const dateFormatter = new Intl.DateTimeFormat("es-CO", {
   dateStyle: "medium",
@@ -38,20 +38,28 @@ const dateFormatter = new Intl.DateTimeFormat("es-CO", {
 
 function getBaseCost(product) {
   const unit = product.unit;
+  const normalizedUnit = unit.toLowerCase();
+  const quantity = Number(product.presentationQuantity || 1);
 
-  if (unit === "kilo") {
-    return `${currency.format(product.price / 1000)} por gramo`;
+  if (normalizedUnit.includes("kilo")) {
+    return `${currency.format(product.price / (quantity * 1000))} por gramo`;
   }
 
-  if (unit === "litros") {
-    return `${currency.format(product.price / 1000)} por ml`;
+  if (normalizedUnit.includes("litro")) {
+    return `${currency.format(product.price / (quantity * 1000))} por ml`;
   }
 
-  if (unit === "gramos") {
-    return `${currency.format(product.price)} por gramo`;
+  if (normalizedUnit.includes("gramo")) {
+    return `${currency.format(product.price / quantity)} por gramo`;
   }
 
-  return `${currency.format(product.price)} por ${unit}`;
+  return `${currency.format(product.price / quantity)} por ${unit}`;
+}
+
+function getPresentationLabel(product) {
+  const quantity = Number(product.presentationQuantity || 1);
+  const formattedQuantity = Number.isInteger(quantity) ? quantity : quantity.toLocaleString("es-CO");
+  return `${formattedQuantity} ${product.unit}`;
 }
 
 function groupByCategory(products) {
@@ -92,6 +100,7 @@ function App() {
   const [inventoryDrafts, setInventoryDrafts] = useState({});
   const [productDrafts, setProductDrafts] = useState({});
   const [priceDrafts, setPriceDrafts] = useState({});
+  const [presentationQuantityDrafts, setPresentationQuantityDrafts] = useState({});
   const [unitDrafts, setUnitDrafts] = useState({});
   const [expandedCategories, setExpandedCategories] = useState({});
   const [productFormMenus, setProductFormMenus] = useState({});
@@ -237,14 +246,15 @@ function App() {
     const name = draft.name.trim();
     const price = Number(draft.price);
     const unit = unitOptions.includes(draft.unit) ? draft.unit : unitOptions[0] || "unidad";
+    const presentationQuantity = Number(draft.presentationQuantity);
 
-    if (!name || !categoryId || Number.isNaN(price) || price < 0) {
+    if (!name || !categoryId || Number.isNaN(price) || price < 0 || Number.isNaN(presentationQuantity) || presentationQuantity <= 0) {
       return;
     }
 
     const data = await api("/products", {
       method: "POST",
-      body: JSON.stringify({ name, price, categoryId, unit }),
+      body: JSON.stringify({ name, price, categoryId, unit, presentationQuantity }),
     });
 
     setProducts(data.products);
@@ -349,6 +359,10 @@ function App() {
     setPriceDrafts((current) => ({ ...current, [productId]: value }));
   }
 
+  function updatePresentationQuantityDraft(productId, value) {
+    setPresentationQuantityDrafts((current) => ({ ...current, [productId]: value }));
+  }
+
   async function saveProductPrice(product) {
     const draftValue = priceDrafts[product.id];
     if (draftValue === undefined || draftValue === "") {
@@ -416,16 +430,32 @@ function App() {
     setToast(`Inventario de ${product.name} actualizado`);
   }
 
-  async function updateProductUnit(product, unit) {
+  async function updateProductPresentation(product, updates) {
+    const nextUnit = updates.unit || product.unit;
+    const nextPresentationQuantity =
+      updates.presentationQuantity !== undefined
+        ? Number(updates.presentationQuantity)
+        : Number(product.presentationQuantity || 1);
+
+    if (Number.isNaN(nextPresentationQuantity) || nextPresentationQuantity <= 0) {
+      updatePresentationQuantityDraft(product.id, undefined);
+      return;
+    }
+
     const data = await api(`/products/${product.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ unit }),
+      body: JSON.stringify({ unit: nextUnit, presentationQuantity: nextPresentationQuantity }),
     });
     setProducts(data.products);
     setInventory(data.inventory || inventory);
     setItems((current) =>
-      current.map((item) => (item.productId === product.id ? { ...item, unit } : item)),
+      current.map((item) =>
+        item.productId === product.id
+          ? { ...item, unit: nextUnit, presentationQuantity: nextPresentationQuantity }
+          : item,
+      ),
     );
+    updatePresentationQuantityDraft(product.id, undefined);
     setToast(`Presentacion de ${product.name} actualizada`);
   }
 
@@ -608,6 +638,15 @@ function App() {
                                 placeholder="Precio"
                                 aria-label={`Precio para ${category.name}`}
                               />
+                              <input
+                                value={draft.presentationQuantity}
+                                onChange={(event) => updateProductDraft(category.id, { presentationQuantity: event.target.value })}
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="Cant."
+                                aria-label={`Cantidad de presentacion para ${category.name}`}
+                              />
                               <select
                                 value={draftUnit}
                                 onChange={(event) => updateProductDraft(category.id, { unit: event.target.value })}
@@ -639,7 +678,7 @@ function App() {
                                       aria-expanded={editingProductId === product.id}
                                     >
                                       <strong>{product.name}</strong>
-                                      <span>{currency.format(product.price)} / {product.unit}</span>
+                                      <span>{currency.format(product.price)} / {getPresentationLabel(product)}</span>
                                       <small>{getBaseCost(product)}</small>
                                     </button>
                                     <button
@@ -671,10 +710,31 @@ function App() {
                                         />
                                       </label>
                                       <label className="price-editor">
-                                        Presentacion
+                                        Cantidad
+                                        <input
+                                          value={presentationQuantityDrafts[product.id] ?? product.presentationQuantity ?? 1}
+                                          onChange={(event) => updatePresentationQuantityDraft(product.id, event.target.value)}
+                                          onBlur={() =>
+                                            updateProductPresentation(product, {
+                                              presentationQuantity: presentationQuantityDrafts[product.id] ?? product.presentationQuantity ?? 1,
+                                            })
+                                          }
+                                          onKeyDown={(event) => {
+                                            if (event.key === "Enter") {
+                                              event.currentTarget.blur();
+                                            }
+                                          }}
+                                          type="number"
+                                          min="0.01"
+                                          step="0.01"
+                                          aria-label={`Cambiar cantidad de presentacion de ${product.name}`}
+                                        />
+                                      </label>
+                                      <label className="price-editor">
+                                        Unidad
                                         <select
                                           value={product.unit}
-                                          onChange={(event) => updateProductUnit(product, event.target.value)}
+                                          onChange={(event) => updateProductPresentation(product, { unit: event.target.value })}
                                           aria-label={`Cambiar presentacion de ${product.name}`}
                                         >
                                           {unitOptions.map((unit) => (
@@ -850,7 +910,7 @@ function App() {
                         aria-label={`Cantidad de ${item.name}`}
                       />
                       <div className="product-numbers">
-                        <span>{currency.format(item.price)} / {item.unit}</span>
+                        <span>{currency.format(item.price)} / {getPresentationLabel(item)}</span>
                         <span>{getBaseCost(item)}</span>
                         <strong>{currency.format(item.price * item.quantity)}</strong>
                       </div>
@@ -893,7 +953,7 @@ function App() {
                           <div className="inventory-row" key={product.id}>
                             <div>
                               <strong>{product.name}</strong>
-                              <span>{product.unit}</span>
+                              <span>{getPresentationLabel(product)}</span>
                             </div>
                             <label className="inventory-editor">
                               Tengo
@@ -913,10 +973,31 @@ function App() {
                               />
                             </label>
                             <label className="inventory-editor">
-                              Presentacion
+                              Cantidad
+                              <input
+                                value={presentationQuantityDrafts[product.id] ?? product.presentationQuantity ?? 1}
+                                onChange={(event) => updatePresentationQuantityDraft(product.id, event.target.value)}
+                                onBlur={() =>
+                                  updateProductPresentation(product, {
+                                    presentationQuantity: presentationQuantityDrafts[product.id] ?? product.presentationQuantity ?? 1,
+                                  })
+                                }
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") {
+                                    event.currentTarget.blur();
+                                  }
+                                }}
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                aria-label={`Cantidad de presentacion de ${product.name}`}
+                              />
+                            </label>
+                            <label className="inventory-editor">
+                              Unidad
                               <select
                                 value={product.unit}
-                                onChange={(event) => updateProductUnit(product, event.target.value)}
+                                onChange={(event) => updateProductPresentation(product, { unit: event.target.value })}
                                 aria-label={`Presentacion de ${product.name}`}
                               >
                                 {unitOptions.map((unit) => (
