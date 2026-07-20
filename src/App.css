@@ -611,6 +611,16 @@ select:focus {
   white-space: nowrap;
 }
 
+.product-menu-trigger em {
+  overflow: hidden;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .category-empty {
   padding: 16px 12px;
   color: #6f7f75;
@@ -659,7 +669,58 @@ select:focus {
   border-radius: 10px;
 }
 
+.brand-picker {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 13px;
+  background: var(--panel-soft);
+}
+
+.brand-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.brand-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.brand-options span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.brand-option {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--panel-solid);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.brand-option.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
 .catalog-row strong,
+.catalog-row em,
 .product-main strong,
 .catalog-row span,
 .product-main span {

@@ -29,7 +29,7 @@ const currency = new Intl.NumberFormat("es-CO", {
 });
 
 const fallbackUnits = ["kilo", "gramos", "litros", "unidad", "frasco", "pote", "sobre", "caja"];
-const emptyProductDraft = { name: "", price: "", presentationQuantity: "1", unit: "unidad" };
+const emptyProductDraft = { name: "", brand: "", price: "", presentationQuantity: "1", unit: "unidad" };
 
 const dateFormatter = new Intl.DateTimeFormat("es-CO", {
   dateStyle: "medium",
@@ -107,6 +107,8 @@ function App() {
   const [units, setUnits] = useState(fallbackUnits.map((name, index) => ({ id: `fallback-${index}`, name })));
   const [inventoryDrafts, setInventoryDrafts] = useState({});
   const [productDrafts, setProductDrafts] = useState({});
+  const [brandDrafts, setBrandDrafts] = useState({});
+  const [brandMenus, setBrandMenus] = useState({});
   const [nameDrafts, setNameDrafts] = useState({});
   const [priceDrafts, setPriceDrafts] = useState({});
   const [presentationQuantityDrafts, setPresentationQuantityDrafts] = useState({});
@@ -161,7 +163,7 @@ function App() {
     }
 
     return products.filter((product) =>
-      `${product.name} ${product.category}`.toLowerCase().includes(text),
+      `${product.name} ${product.brand || ""} ${product.category}`.toLowerCase().includes(text),
     );
   }, [products, query]);
   const groupedProducts = useMemo(() => groupByCategory(filteredProducts), [filteredProducts]);
@@ -253,6 +255,7 @@ function App() {
     event.preventDefault();
     const draft = productDrafts[categoryId] || emptyProductDraft;
     const name = draft.name.trim();
+    const brand = draft.brand.trim();
     const price = Number(draft.price);
     const unit = unitOptions.includes(draft.unit) ? draft.unit : unitOptions[0] || "unidad";
     const presentationQuantity = Number(draft.presentationQuantity);
@@ -263,7 +266,7 @@ function App() {
 
     const data = await api("/products", {
       method: "POST",
-      body: JSON.stringify({ name, price, categoryId, unit, presentationQuantity }),
+      body: JSON.stringify({ name, brand, price, categoryId, unit, presentationQuantity }),
     });
 
     setProducts(data.products);
@@ -372,6 +375,14 @@ function App() {
     setNameDrafts((current) => ({ ...current, [productId]: value }));
   }
 
+  function updateBrandDraft(productId, value) {
+    setBrandDrafts((current) => ({ ...current, [productId]: value }));
+  }
+
+  function toggleBrandMenu(productId) {
+    setBrandMenus((current) => ({ ...current, [productId]: !current[productId] }));
+  }
+
   async function saveProductName(product) {
     const name = (nameDrafts[product.id] ?? product.name).trim();
     if (!name || name === product.name) {
@@ -393,6 +404,28 @@ function App() {
     );
     updateNameDraft(product.id, undefined);
     setToast(`${product.name} ahora es ${name}`);
+  }
+
+  async function saveProductBrand(product, nextBrand) {
+    const brand = (nextBrand ?? brandDrafts[product.id] ?? product.brand ?? "").trim();
+    if (brand === (product.brand || "")) {
+      updateBrandDraft(product.id, undefined);
+      return;
+    }
+
+    const data = await api(`/products/${product.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ brand }),
+    });
+    setProducts(data.products);
+    setInventory(data.inventory || inventory);
+    setItems((current) =>
+      current.map((item) =>
+        item.productId === product.id ? { ...item, brand } : item,
+      ),
+    );
+    updateBrandDraft(product.id, undefined);
+    setToast(brand ? `Marca de ${product.name}: ${brand}` : `Marca de ${product.name} borrada`);
   }
 
   function updatePresentationQuantityDraft(productId, value) {
@@ -463,6 +496,16 @@ function App() {
       return next;
     });
     setNameDrafts((current) => {
+      const next = { ...current };
+      delete next[product.id];
+      return next;
+    });
+    setBrandDrafts((current) => {
+      const next = { ...current };
+      delete next[product.id];
+      return next;
+    });
+    setBrandMenus((current) => {
       const next = { ...current };
       delete next[product.id];
       return next;
@@ -582,6 +625,7 @@ function App() {
     setEditingProductId((current) => (current === product.id ? null : product.id));
     setPriceDrafts((current) => ({ ...current, [product.id]: product.price }));
     setNameDrafts((current) => ({ ...current, [product.id]: product.name }));
+    setBrandDrafts((current) => ({ ...current, [product.id]: product.brand || "" }));
   }
 
   function formatHistoryDate(value) {
@@ -736,6 +780,12 @@ function App() {
                                 aria-label={`Nuevo producto en ${category.name}`}
                               />
                               <input
+                                value={draft.brand}
+                                onChange={(event) => updateProductDraft(category.id, { brand: event.target.value })}
+                                placeholder="Marca"
+                                aria-label={`Marca para ${category.name}`}
+                              />
+                              <input
                                 value={draft.price}
                                 onChange={(event) => updateProductDraft(category.id, { price: event.target.value })}
                                 type="number"
@@ -784,6 +834,7 @@ function App() {
                                       aria-expanded={editingProductId === product.id}
                                     >
                                       <strong>{product.name}</strong>
+                                      {product.brand ? <em>{product.brand}</em> : null}
                                       <span>{currency.format(product.price)} / {getPresentationLabel(product)}</span>
                                       <small>{getBaseCost(product)}</small>
                                     </button>
@@ -812,6 +863,52 @@ function App() {
                                           aria-label={`Cambiar nombre de ${product.name}`}
                                         />
                                       </label>
+                                      <label className="price-editor">
+                                        Marca
+                                        <input
+                                          value={brandDrafts[product.id] ?? product.brand ?? ""}
+                                          onChange={(event) => updateBrandDraft(product.id, event.target.value)}
+                                          onBlur={() => saveProductBrand(product)}
+                                          onKeyDown={(event) => {
+                                            if (event.key === "Enter") {
+                                              event.currentTarget.blur();
+                                            }
+                                          }}
+                                          placeholder="Sin marca"
+                                          aria-label={`Cambiar marca de ${product.name}`}
+                                        />
+                                      </label>
+                                      <div className="brand-picker">
+                                        <button
+                                          className="brand-picker-trigger"
+                                          type="button"
+                                          onMouseDown={(event) => event.preventDefault()}
+                                          onClick={() => toggleBrandMenu(product.id)}
+                                          aria-expanded={Boolean(brandMenus[product.id])}
+                                        >
+                                          Marcas guardadas
+                                          <ChevronDown className={brandMenus[product.id] ? "chevron open" : "chevron"} size={17} aria-hidden="true" />
+                                        </button>
+                                        {brandMenus[product.id] ? (
+                                          <div className="brand-options">
+                                            {product.brandOptions?.length ? (
+                                              product.brandOptions.map((brand) => (
+                                                <button
+                                                  className={brand === product.brand ? "brand-option active" : "brand-option"}
+                                                  type="button"
+                                                  key={brand}
+                                                  onMouseDown={(event) => event.preventDefault()}
+                                                  onClick={() => saveProductBrand(product, brand)}
+                                                >
+                                                  {brand}
+                                                </button>
+                                              ))
+                                            ) : (
+                                              <span>Sin marcas guardadas</span>
+                                            )}
+                                          </div>
+                                        ) : null}
+                                      </div>
                                       <label className="price-editor">
                                         Cambiar precio
                                         <input
@@ -1033,7 +1130,7 @@ function App() {
                       </button>
                       <div className="product-main">
                         <strong>{item.name}</strong>
-                        <span>{item.checked ? "Comprado" : item.category}</span>
+                        <span>{item.checked ? "Comprado" : [item.brand, item.category].filter(Boolean).join(" - ")}</span>
                       </div>
                       <input
                         className="quantity-input"
@@ -1087,7 +1184,7 @@ function App() {
                           <div className="inventory-row" key={product.id}>
                             <div>
                               <strong>{product.name}</strong>
-                              <span>{getPresentationLabel(product)}</span>
+                              <span>{[product.brand, getPresentationLabel(product)].filter(Boolean).join(" - ")}</span>
                             </div>
                             <label className="inventory-editor">
                               Tengo

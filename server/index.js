@@ -53,6 +53,7 @@ await db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     category_id INTEGER NOT NULL,
     name TEXT NOT NULL,
+    brand TEXT NOT NULL DEFAULT '',
     price INTEGER NOT NULL DEFAULT 0,
     unit TEXT NOT NULL DEFAULT 'unidad',
     presentation_quantity REAL NOT NULL DEFAULT 1,
@@ -100,9 +101,21 @@ await db.exec(`
     name TEXT NOT NULL UNIQUE,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS product_brands (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE(product_id, name)
+  );
 `);
 
 const productColumns = await db.all("PRAGMA table_info(products)");
+if (!productColumns.some((column) => column.name === "brand")) {
+  await db.run("ALTER TABLE products ADD COLUMN brand TEXT NOT NULL DEFAULT ''");
+}
 if (!productColumns.some((column) => column.name === "unit")) {
   await db.run("ALTER TABLE products ADD COLUMN unit TEXT NOT NULL DEFAULT 'unidad'");
 }
@@ -173,15 +186,30 @@ async function getProducts() {
     SELECT
       products.id,
       products.name,
+      products.brand,
       products.price,
       products.unit,
       products.presentation_quantity AS presentationQuantity,
       categories.id AS categoryId,
-      categories.name AS category
+      categories.name AS category,
+      COALESCE(brand_list.names, '') AS brandOptionsText
     FROM products
     JOIN categories ON categories.id = products.category_id
+    LEFT JOIN (
+      SELECT product_id, GROUP_CONCAT(name, '|||') AS names
+      FROM product_brands
+      GROUP BY product_id
+    ) AS brand_list ON brand_list.product_id = products.id
     ORDER BY categories.name, products.name
-  `);
+  `).then((products) =>
+    products.map((product) => ({
+      ...product,
+      brandOptions: product.brandOptionsText
+        ? product.brandOptionsText.split("|||").filter(Boolean).sort((first, second) => first.localeCompare(second, "es", { sensitivity: "base" }))
+        : [],
+      brandOptionsText: undefined,
+    })),
+  );
 }
 
 async function getListItems(listId) {
@@ -195,6 +223,7 @@ async function getListItems(listId) {
         list_items.checked,
         list_items.price_snapshot AS price,
         products.name,
+        products.brand,
         products.unit,
         products.presentation_quantity AS presentationQuantity,
         categories.name AS category
@@ -216,6 +245,7 @@ async function getInventory() {
       inventory.quantity,
       inventory.updated_at AS updatedAt,
       products.name,
+      products.brand,
       products.unit,
       products.presentation_quantity AS presentationQuantity,
       categories.name AS category
@@ -324,6 +354,7 @@ app.post("/api/categories", async (request, response) => {
 
 app.post("/api/products", async (request, response) => {
   const name = normalizeText(request.body.name);
+  const brand = normalizeText(request.body.brand);
   const categoryId = Number(request.body.categoryId);
   const price = Number(request.body.price);
   const unit = await ensureUnit(request.body.unit);
@@ -342,9 +373,10 @@ app.post("/api/products", async (request, response) => {
   const roundedPrice = Math.round(price);
 
   await db.run(
-    "INSERT INTO products (category_id, name, price, unit, presentation_quantity) VALUES (?, ?, ?, ?, ?) ON CONFLICT(category_id, name) DO UPDATE SET price = excluded.price, unit = excluded.unit, presentation_quantity = excluded.presentation_quantity",
+    "INSERT INTO products (category_id, name, brand, price, unit, presentation_quantity) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(category_id, name) DO UPDATE SET brand = excluded.brand, price = excluded.price, unit = excluded.unit, presentation_quantity = excluded.presentation_quantity",
     categoryId,
     name,
+    brand,
     roundedPrice,
     unit,
     presentationQuantity,
@@ -365,6 +397,10 @@ app.post("/api/products", async (request, response) => {
     );
   }
 
+  if (brand) {
+    await db.run("INSERT OR IGNORE INTO product_brands (product_id, name) VALUES (?, ?)", product.id, brand);
+  }
+
   response.status(201).json({
     products: await getProducts(),
     priceHistory: await getPriceHistory(),
@@ -376,18 +412,20 @@ app.patch("/api/products/:productId", async (request, response) => {
   const productId = Number(request.params.productId);
   const hasPrice = request.body.price !== undefined;
   const hasName = request.body.name !== undefined;
+  const hasBrand = request.body.brand !== undefined;
   const hasUnit = request.body.unit !== undefined;
   const hasPresentationQuantity = request.body.presentationQuantity !== undefined;
   const hasCategory = request.body.categoryId !== undefined;
   const price = Number(request.body.price);
   const name = normalizeText(request.body.name);
+  const brand = normalizeText(request.body.brand);
   const unit = hasUnit ? await ensureUnit(request.body.unit) : "unidad";
   const presentationQuantity = normalizePresentationQuantity(request.body.presentationQuantity);
   const categoryId = Number(request.body.categoryId);
 
   if (
     !productId ||
-    (!hasPrice && !hasName && !hasUnit && !hasPresentationQuantity && !hasCategory) ||
+    (!hasPrice && !hasName && !hasBrand && !hasUnit && !hasPresentationQuantity && !hasCategory) ||
     (hasName && !name) ||
     (hasPrice && (Number.isNaN(price) || price < 0)) ||
     (hasCategory && !categoryId)
@@ -454,6 +492,13 @@ app.patch("/api/products/:productId", async (request, response) => {
         product.price,
         roundedPrice,
       );
+    }
+  }
+
+  if (hasBrand) {
+    await db.run("UPDATE products SET brand = ? WHERE id = ?", brand, productId);
+    if (brand) {
+      await db.run("INSERT OR IGNORE INTO product_brands (product_id, name) VALUES (?, ?)", productId, brand);
     }
   }
 
