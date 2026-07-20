@@ -25,7 +25,8 @@ const API_URL = "http://127.0.0.1:3001/api";
 const currency = new Intl.NumberFormat("es-CO", {
   style: "currency",
   currency: "COP",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
 
 const fallbackUnits = ["kilo", "gramos", "litros", "unidad", "frasco", "pote", "sobre", "caja"];
@@ -482,7 +483,7 @@ function App() {
     setInventory(data.inventory || inventory);
     setItems((current) =>
       current.map((item) =>
-        item.productId === product.id && !item.checked ? { ...item, price: Math.round(price) } : item,
+        item.productId === product.id && !item.checked ? { ...item, price } : item,
       ),
     );
     updatePriceDraft(product.id, undefined);
@@ -833,7 +834,7 @@ function App() {
                                 onChange={(event) => updateProductDraft(category.id, { price: event.target.value })}
                                 type="number"
                                 min="0"
-                                step="100"
+                                step="0.01"
                                 placeholder="Precio"
                                 aria-label={`Precio para ${category.name}`}
                               />
@@ -965,7 +966,7 @@ function App() {
                                           }}
                                           type="number"
                                           min="0"
-                                          step="100"
+                                          step="0.01"
                                           aria-label={`Cambiar precio de ${product.name}`}
                                         />
                                       </label>

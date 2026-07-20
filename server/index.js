@@ -54,7 +54,7 @@ await db.exec(`
     category_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     brand TEXT NOT NULL DEFAULT '',
-    price INTEGER NOT NULL DEFAULT 0,
+    price REAL NOT NULL DEFAULT 0,
     unit TEXT NOT NULL DEFAULT 'unidad',
     presentation_quantity REAL NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -74,7 +74,7 @@ await db.exec(`
     product_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 1,
     checked INTEGER NOT NULL DEFAULT 0,
-    price_snapshot INTEGER NOT NULL,
+    price_snapshot REAL NOT NULL,
     FOREIGN KEY (list_id) REFERENCES shopping_lists(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
   );
@@ -82,8 +82,8 @@ await db.exec(`
   CREATE TABLE IF NOT EXISTS price_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_id INTEGER NOT NULL,
-    old_price INTEGER,
-    new_price INTEGER NOT NULL,
+    old_price REAL,
+    new_price REAL NOT NULL,
     changed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
   );
@@ -405,14 +405,12 @@ app.post("/api/products", async (request, response) => {
     categoryId,
     name,
   );
-  const roundedPrice = Math.round(price);
-
   await db.run(
     "INSERT INTO products (category_id, name, brand, price, unit, presentation_quantity) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(category_id, name) DO UPDATE SET brand = excluded.brand, price = excluded.price, unit = excluded.unit, presentation_quantity = excluded.presentation_quantity",
     categoryId,
     name,
     brand,
-    roundedPrice,
+    price,
     unit,
     presentationQuantity,
   );
@@ -423,12 +421,12 @@ app.post("/api/products", async (request, response) => {
     name,
   );
 
-  if (!existing || existing.price !== roundedPrice) {
+  if (!existing || existing.price !== price) {
     await db.run(
       "INSERT INTO price_history (product_id, old_price, new_price) VALUES (?, ?, ?)",
       product.id,
       existing?.price ?? null,
-      roundedPrice,
+      price,
     );
   }
 
@@ -513,19 +511,18 @@ app.patch("/api/products/:productId", async (request, response) => {
   }
 
   if (hasPrice) {
-    const roundedPrice = Math.round(price);
-    await db.run("UPDATE products SET price = ? WHERE id = ?", roundedPrice, productId);
+    await db.run("UPDATE products SET price = ? WHERE id = ?", price, productId);
     await db.run(
       "UPDATE list_items SET price_snapshot = ? WHERE product_id = ? AND checked = 0",
-      roundedPrice,
+      price,
       productId,
     );
-    if (product.price !== roundedPrice) {
+    if (product.price !== price) {
       await db.run(
         "INSERT INTO price_history (product_id, old_price, new_price) VALUES (?, ?, ?)",
         productId,
         product.price,
-        roundedPrice,
+        price,
       );
     }
   }
