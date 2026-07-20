@@ -817,6 +817,39 @@ app.patch("/api/categories/:categoryId", async (request, response) => {
   });
 });
 
+app.delete("/api/categories/:categoryId", async (request, response) => {
+  const categoryId = Number(request.params.categoryId);
+
+  if (!categoryId) {
+    response.status(400).json({ error: "Valid category is required." });
+    return;
+  }
+
+  const category = await getDb().get("SELECT id, name FROM categories WHERE id = ?", categoryId);
+  if (!category) {
+    response.status(404).json({ error: "Category not found." });
+    return;
+  }
+
+  await getDb().run("DELETE FROM categories WHERE id = ?", categoryId);
+
+  const lists = await getDb().all(
+    "SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC",
+  );
+  const activeListId = lists[0]?.id ?? null;
+
+  response.json({
+    categories: await getDb().all("SELECT id, name FROM categories ORDER BY name"),
+    products: await getProducts(),
+    inventory: await getInventory(),
+    priceHistory: await getPriceHistory(),
+    lists,
+    activeListId,
+    items: activeListId ? await getListItems(activeListId) : [],
+    summary: await getSummary(activeListId),
+  });
+});
+
 app.post("/api/products", async (request, response) => {
   const name = normalizeText(request.body.name);
   const brand = normalizeText(request.body.brand);

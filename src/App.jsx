@@ -522,6 +522,42 @@ function App() {
     setToast(`${category.name} ahora es ${name}`);
   }
 
+  async function deleteCategory(category) {
+    const categoryProducts = products.filter((product) => product.categoryId === category.id);
+    const shouldDelete = window.confirm(
+      `Eliminar la categoria ${category.name} con ${categoryProducts.length} productos? Esta accion tambien quitara esos productos de listas, inventario e historial.`,
+    );
+    if (!shouldDelete) {
+      return;
+    }
+
+    const data = await api(`/categories/${category.id}`, { method: "DELETE" });
+    setCategories(data.categories);
+    setProducts(data.products);
+    setInventory(data.inventory || []);
+    setPriceHistory(data.priceHistory || []);
+    setLists(data.lists || lists);
+    setActiveListId(data.activeListId ?? null);
+    setItems(data.items || []);
+    setExpandedCategories((current) => {
+      const next = { ...current };
+      delete next[category.id];
+      return next;
+    });
+    setProductFormMenus((current) => {
+      const next = { ...current };
+      delete next[category.id];
+      return next;
+    });
+    setCategoryDrafts((current) => {
+      const next = { ...current };
+      delete next[category.id];
+      return next;
+    });
+    setEditingCategoryId(null);
+    setToast(`Categoria ${category.name} eliminada`);
+  }
+
   function updateProductDraft(categoryId, updates) {
     setProductDrafts((current) => ({
       ...current,
@@ -1440,6 +1476,14 @@ function App() {
                               Agregar producto
                             </span>
                             <ChevronDown className={isProductFormOpen ? "chevron open" : "chevron"} size={18} aria-hidden="true" />
+                          </button>
+                          <button
+                            className="category-delete-trigger"
+                            type="button"
+                            onClick={() => deleteCategory(category)}
+                          >
+                            <Trash2 size={17} aria-hidden="true" />
+                            Eliminar categoria completa
                           </button>
                           {isProductFormOpen ? (
                             <form className="category-product-form" onSubmit={(event) => createProduct(event, category.id)}>

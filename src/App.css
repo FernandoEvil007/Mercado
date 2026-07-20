@@ -1234,6 +1234,22 @@ select:focus {
   min-width: 0;
 }
 
+.category-delete-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 24px);
+  min-height: 40px;
+  margin: 10px 12px 0;
+  border: 1px solid color-mix(in srgb, var(--danger) 32%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger) 8%, var(--panel-solid));
+  color: var(--danger);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
 .category-stack,
 .inventory-stack,
 .product-list,
