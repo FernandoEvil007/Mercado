@@ -939,6 +939,10 @@ function App() {
               <p className="eyebrow">Base protegida</p>
               <h1>Merky</h1>
             </div>
+            <div className="creator-signature" aria-label="Aplicacion creada por Fernando Rodriguez Bayona">
+              <span>Creada por</span>
+              <strong>Fernando Rodriguez Bayona</strong>
+            </div>
             <form className="login-form" onSubmit={submitAuth}>
               <label>
                 Usuario

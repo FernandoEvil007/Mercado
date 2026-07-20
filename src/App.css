@@ -104,6 +104,30 @@ button {
   box-shadow: var(--shadow);
 }
 
+.creator-signature {
+  display: grid;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel-solid));
+}
+
+.creator-signature span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.creator-signature strong {
+  color: var(--text-strong);
+  font-size: 0.94rem;
+}
+
 .login-form {
   display: grid;
   gap: 12px;
