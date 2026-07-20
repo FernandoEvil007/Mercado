@@ -252,6 +252,17 @@ function App() {
         })),
     [filteredPriceHistory],
   );
+  const previousPricesByProduct = useMemo(
+    () =>
+      priceHistory.reduce((result, entry) => {
+        if (entry.oldPrice !== null && result[entry.productId] === undefined) {
+          result[entry.productId] = entry.oldPrice;
+        }
+
+        return result;
+      }, {}),
+    [priceHistory],
+  );
   const totals = useMemo(
     () =>
       items.reduce(
@@ -1378,6 +1389,15 @@ function App() {
                   <Share2 size={17} aria-hidden="true" />
                   Compartir
                 </button>
+                <button
+                  className="share-list-button"
+                  type="button"
+                  onClick={() => setActiveView("shopping")}
+                  disabled={items.length === 0}
+                >
+                  <Check size={17} aria-hidden="true" />
+                  Comprar
+                </button>
               </div>
 
               <section className="shopping-progress" aria-label="Avance de compras">
@@ -1537,6 +1557,84 @@ function App() {
             </section>
           ) : null}
 
+          {activeView === "shopping" ? (
+            <section className="panel shopping-mode-panel">
+              <div className="shopping-mode-head">
+                <div className="panel-title">
+                  <ShoppingBasket size={20} aria-hidden="true" />
+                  <div>
+                    <h3>Modo compra</h3>
+                    <p>{totals.checked} de {items.length} productos</p>
+                  </div>
+                </div>
+                <button className="share-list-button" type="button" onClick={() => setActiveView("list")}>
+                  Salir
+                </button>
+              </div>
+
+              <section className="shopping-progress compact" aria-label="Avance de compras">
+                <div className="progress-head">
+                  <span>Avance</span>
+                  <strong>{shoppingProgress}%</strong>
+                </div>
+                <div className="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingProgress}>
+                  <span style={{ width: `${shoppingProgress}%` }} />
+                </div>
+              </section>
+
+              {items.length === 0 ? (
+                <div className="empty-state">
+                  <ShoppingBasket size={40} aria-hidden="true" />
+                  <strong>Lista vacia</strong>
+                  <span>Agrega productos desde el catalogo.</span>
+                </div>
+              ) : (
+                <div className="shopping-category-list">
+                  {Object.entries(groupedListItems).map(([categoryName, categoryItems]) => (
+                    <section className="shopping-category" key={categoryName}>
+                      <div className="shopping-category-head">
+                        <strong>{categoryName}</strong>
+                        <span>{categoryItems.filter((item) => item.checked).length}/{categoryItems.length}</span>
+                      </div>
+                      {categoryItems.map((item) => (
+                        <article className={item.checked ? "shopping-item checked" : "shopping-item"} key={item.id}>
+                          <button
+                            className={item.checked ? "check-button checked" : "check-button"}
+                            type="button"
+                            onClick={() => updateItem(item.id, { checked: !item.checked })}
+                            aria-label={item.checked ? `${item.name} comprado` : `Marcar ${item.name} como comprado`}
+                          >
+                            <Check size={16} aria-hidden="true" />
+                          </button>
+                          <div className="shopping-item-main">
+                            <strong>{item.name}</strong>
+                            {item.brand ? <span>{item.brand}</span> : null}
+                          </div>
+                          <div className="shopping-previous-price">
+                            <span>Anterior</span>
+                            <strong>
+                              {previousPricesByProduct[item.productId] !== undefined
+                                ? currency.format(previousPricesByProduct[item.productId])
+                                : "Sin anterior"}
+                            </strong>
+                          </div>
+                          <input
+                            className="quantity-input shopping-quantity"
+                            value={item.quantity}
+                            onChange={(event) => updateItem(item.id, { quantity: event.target.value })}
+                            type="number"
+                            min="1"
+                            aria-label={`Cantidad de ${item.name}`}
+                          />
+                        </article>
+                      ))}
+                    </section>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : null}
+
           {activeView === "history" ? (
             <section className="panel history-panel">
               <div className="catalog-head">
@@ -1634,7 +1732,7 @@ function App() {
             Catalogo
           </button>
           <button
-            className={activeView === "list" ? "active" : ""}
+            className={activeView === "list" || activeView === "shopping" ? "active" : ""}
             type="button"
             onClick={() => setActiveView("list")}
           >

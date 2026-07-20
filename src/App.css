@@ -235,6 +235,7 @@ h4 {
 .lists-panel,
 .catalog-panel,
 .list-panel,
+.shopping-mode-panel,
 .history-panel,
 .inventory-panel,
 .summary-panel,
@@ -330,6 +331,109 @@ h4 {
   color: var(--muted);
   font-size: 0.84rem;
   font-weight: 750;
+}
+
+.shopping-progress.compact {
+  padding: 10px 12px;
+}
+
+.shopping-mode-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.shopping-mode-head p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.shopping-category-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.shopping-category {
+  display: grid;
+  gap: 8px;
+}
+
+.shopping-category-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 3px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.shopping-category-head strong {
+  color: var(--accent);
+  font-size: 0.92rem;
+}
+
+.shopping-item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(86px, 0.45fr) 64px;
+  gap: 9px;
+  align-items: center;
+  min-height: 70px;
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--panel-solid);
+}
+
+.shopping-item.checked {
+  background: var(--panel-soft);
+  color: var(--muted);
+}
+
+.shopping-item.checked .shopping-item-main strong {
+  text-decoration: line-through;
+}
+
+.shopping-item-main,
+.shopping-previous-price {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.shopping-item-main strong,
+.shopping-item-main span,
+.shopping-previous-price strong,
+.shopping-previous-price span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shopping-item-main strong {
+  color: var(--text-strong);
+  font-size: 0.98rem;
+}
+
+.shopping-item-main span,
+.shopping-previous-price span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.shopping-previous-price strong {
+  color: var(--text-strong);
+  font-size: 0.84rem;
+  text-align: right;
+}
+
+.shopping-quantity {
+  min-height: 44px;
 }
 
 .summary-grid {
@@ -1334,6 +1438,15 @@ select:focus {
 
   .product-row {
     grid-template-columns: 48px minmax(0, 1fr) 62px;
+  }
+
+  .shopping-item {
+    grid-template-columns: 48px minmax(0, 1fr) 58px;
+  }
+
+  .shopping-previous-price {
+    grid-column: 2 / -1;
+    grid-row: 2;
   }
 
   .product-row .icon-button {
