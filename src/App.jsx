@@ -110,6 +110,7 @@ function App() {
   const [activeView, setActiveView] = useState("catalog");
   const [theme, setTheme] = useState(() => localStorage.getItem("mercardo-theme") || "light");
   const [items, setItems] = useState([]);
+  const [purchases, setPurchases] = useState([]);
   const [priceHistory, setPriceHistory] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [units, setUnits] = useState(fallbackUnits.map((name, index) => ({ id: `fallback-${index}`, name })));
@@ -145,6 +146,7 @@ function App() {
         setLists(data.lists);
         setActiveListId(data.activeListId);
         setItems(data.items);
+        setPurchases(data.purchases || []);
         setPriceHistory(data.priceHistory || []);
         setInventory(data.inventory || []);
         setUnits(data.units?.length ? data.units : fallbackUnits.map((name, index) => ({ id: `fallback-${index}`, name })));
@@ -276,6 +278,7 @@ function App() {
     [items],
   );
   const shoppingProgress = items.length ? Math.round((totals.checked / items.length) * 100) : 0;
+  const canCompletePurchase = items.length > 0 && totals.checked === items.length;
   const summary = useMemo(() => {
     const priceChanges = priceHistory
       .filter((entry) => entry.oldPrice !== null)
@@ -492,6 +495,17 @@ function App() {
 
     await navigator.clipboard.writeText(text);
     setToast("Lista copiada para compartir");
+  }
+
+  async function completeCurrentPurchase() {
+    if (!activeListId || !canCompletePurchase) {
+      return;
+    }
+
+    const data = await api(`/lists/${activeListId}/complete`, { method: "POST" });
+    setPurchases(data.purchases || []);
+    setLists(data.lists || lists);
+    setToast("Compra guardada en el registro");
   }
 
   function exportBackup() {
@@ -958,6 +972,28 @@ function App() {
                   <p className="quiet-text">Aun no hay variaciones de precio.</p>
                 )}
               </section>
+
+              <section className="summary-section">
+                <div className="section-head">
+                  <strong>Compras realizadas</strong>
+                  <span>{purchases.length}</span>
+                </div>
+                {purchases.length ? (
+                  <div className="compact-list purchase-records">
+                    {purchases.slice(0, 6).map((purchase) => (
+                      <article key={purchase.id}>
+                        <div>
+                          <strong>{purchase.listName}</strong>
+                          <span>{formatHistoryDate(purchase.completedAt)} - {purchase.itemCount} productos</span>
+                        </div>
+                        <span>{currency.format(purchase.total)}</span>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="quiet-text">Cuando termines una lista, guardala como compra realizada.</p>
+                )}
+              </section>
             </section>
           ) : null}
 
@@ -1398,6 +1434,14 @@ function App() {
                   <Check size={17} aria-hidden="true" />
                   Comprar
                 </button>
+                <button
+                  className="complete-purchase-button"
+                  type="button"
+                  onClick={completeCurrentPurchase}
+                  disabled={!canCompletePurchase}
+                >
+                  Guardar compra
+                </button>
               </div>
 
               <section className="shopping-progress" aria-label="Avance de compras">
@@ -1569,6 +1613,14 @@ function App() {
                 </div>
                 <button className="share-list-button" type="button" onClick={() => setActiveView("list")}>
                   Salir
+                </button>
+                <button
+                  className="complete-purchase-button"
+                  type="button"
+                  onClick={completeCurrentPurchase}
+                  disabled={!canCompletePurchase}
+                >
+                  Guardar
                 </button>
               </div>
 

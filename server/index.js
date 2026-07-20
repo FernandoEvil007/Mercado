@@ -65,6 +65,8 @@ await db.exec(`
   CREATE TABLE IF NOT EXISTS shopping_lists (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
+    completed_at TEXT,
+    completed_total REAL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -113,6 +115,28 @@ await db.exec(`
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     UNIQUE(product_id, name)
   );
+
+  CREATE TABLE IF NOT EXISTS purchase_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    list_id INTEGER,
+    list_name TEXT NOT NULL,
+    total REAL NOT NULL DEFAULT 0,
+    item_count INTEGER NOT NULL DEFAULT 0,
+    completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS purchase_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    record_id INTEGER NOT NULL,
+    product_id INTEGER,
+    product_name TEXT NOT NULL,
+    brand TEXT NOT NULL DEFAULT '',
+    category TEXT NOT NULL DEFAULT '',
+    quantity REAL NOT NULL DEFAULT 1,
+    price REAL NOT NULL DEFAULT 0,
+    checked INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (record_id) REFERENCES purchase_records(id) ON DELETE CASCADE
+  );
 `);
 
 const productColumns = await db.all("PRAGMA table_info(products)");
@@ -138,6 +162,14 @@ if (!brandColumns.some((column) => column.name === "price")) {
 if (!brandColumns.some((column) => column.name === "updated_at")) {
   await db.run("ALTER TABLE product_brands ADD COLUMN updated_at TEXT");
   await db.run("UPDATE product_brands SET updated_at = COALESCE(created_at, CURRENT_TIMESTAMP)");
+}
+
+const listColumns = await db.all("PRAGMA table_info(shopping_lists)");
+if (!listColumns.some((column) => column.name === "completed_at")) {
+  await db.run("ALTER TABLE shopping_lists ADD COLUMN completed_at TEXT");
+}
+if (!listColumns.some((column) => column.name === "completed_total")) {
+  await db.run("ALTER TABLE shopping_lists ADD COLUMN completed_total REAL");
 }
 
 for (const [categoryName, productName, price] of seedProducts) {
@@ -319,11 +351,48 @@ async function getPriceHistory() {
   `);
 }
 
+async function getPurchaseRecords() {
+  const records = await db.all(`
+    SELECT
+      id,
+      list_id AS listId,
+      list_name AS listName,
+      total,
+      item_count AS itemCount,
+      completed_at AS completedAt
+    FROM purchase_records
+    ORDER BY completed_at DESC, id DESC
+    LIMIT 40
+  `);
+  const items = await db.all(`
+    SELECT
+      record_id AS recordId,
+      product_name AS productName,
+      brand,
+      category,
+      quantity,
+      price,
+      checked
+    FROM purchase_items
+    ORDER BY category COLLATE NOCASE, product_name COLLATE NOCASE
+  `);
+  const itemsByRecord = items.reduce((groups, item) => {
+    if (!groups[item.recordId]) {
+      groups[item.recordId] = [];
+    }
+    groups[item.recordId].push(item);
+    return groups;
+  }, {});
+
+  return records.map((record) => ({ ...record, items: itemsByRecord[record.id] || [] }));
+}
+
 async function getSummary(activeListId = null) {
-  const [products, inventory, priceHistory] = await Promise.all([
+  const [products, inventory, priceHistory, purchases] = await Promise.all([
     getProducts(),
     getInventory(),
     getPriceHistory(),
+    getPurchaseRecords(),
   ]);
   const items = activeListId ? await getListItems(activeListId) : [];
   const lowStock = inventory.filter((item) => item.minQuantity > 0 && item.quantity <= item.minQuantity);
@@ -348,24 +417,26 @@ async function getSummary(activeListId = null) {
     pendingItems: items.length - checkedItems,
     estimatedListTotal,
     priceChanges,
+    lastPurchase: purchases[0] || null,
   };
 }
 
 app.get("/api/bootstrap", async (_request, response) => {
-  const [categories, products, lists, priceHistory, inventory, units] = await Promise.all([
+  const [categories, products, lists, priceHistory, inventory, units, purchases] = await Promise.all([
     db.all("SELECT id, name FROM categories ORDER BY name"),
     getProducts(),
-    db.all("SELECT id, name, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
+    db.all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
     getPriceHistory(),
     getInventory(),
     getUnits(),
+    getPurchaseRecords(),
   ]);
 
   const activeListId = lists[0]?.id ?? null;
   const items = activeListId ? await getListItems(activeListId) : [];
   const summary = await getSummary(activeListId);
 
-  response.json({ categories, products, lists, activeListId, items, priceHistory, inventory, units, summary });
+  response.json({ categories, products, lists, activeListId, items, priceHistory, inventory, units, purchases, summary });
 });
 
 app.get("/api/health", async (_request, response) => {
@@ -389,6 +460,8 @@ app.get("/api/export", async (_request, response) => {
     productBrands,
     inventory,
     priceHistory,
+    purchases,
+    purchaseItems,
     shoppingLists,
     listItems,
     units,
@@ -398,6 +471,8 @@ app.get("/api/export", async (_request, response) => {
     db.all("SELECT * FROM product_brands ORDER BY product_id, name"),
     db.all("SELECT * FROM inventory ORDER BY product_id"),
     db.all("SELECT * FROM price_history ORDER BY changed_at DESC, id DESC"),
+    db.all("SELECT * FROM purchase_records ORDER BY completed_at DESC, id DESC"),
+    db.all("SELECT * FROM purchase_items ORDER BY record_id, category, product_name"),
     db.all("SELECT * FROM shopping_lists ORDER BY id DESC"),
     db.all("SELECT * FROM list_items ORDER BY list_id, id"),
     db.all("SELECT * FROM measurement_units ORDER BY name"),
@@ -412,6 +487,8 @@ app.get("/api/export", async (_request, response) => {
     productBrands,
     inventory,
     priceHistory,
+    purchases,
+    purchaseItems,
     shoppingLists,
     listItems,
     units,
@@ -754,6 +831,57 @@ app.post("/api/lists", async (request, response) => {
 
 app.get("/api/lists/:listId/items", async (request, response) => {
   response.json({ items: await getListItems(Number(request.params.listId)) });
+});
+
+app.post("/api/lists/:listId/complete", async (request, response) => {
+  const listId = Number(request.params.listId);
+  const list = await db.get("SELECT id, name FROM shopping_lists WHERE id = ?", listId);
+
+  if (!list) {
+    response.status(404).json({ error: "List not found." });
+    return;
+  }
+
+  const items = await getListItems(listId);
+  if (!items.length || items.some((item) => !item.checked)) {
+    response.status(400).json({ error: "All items must be checked before completing the purchase." });
+    return;
+  }
+
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const result = await db.run(
+    "INSERT INTO purchase_records (list_id, list_name, total, item_count, completed_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+    listId,
+    list.name,
+    total,
+    items.length,
+  );
+
+  for (const item of items) {
+    await db.run(
+      "INSERT INTO purchase_items (record_id, product_id, product_name, brand, category, quantity, price, checked) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      result.lastID,
+      item.productId,
+      item.name,
+      item.brand || "",
+      item.category || "",
+      item.quantity,
+      item.price,
+      item.checked ? 1 : 0,
+    );
+  }
+
+  await db.run(
+    "UPDATE shopping_lists SET completed_at = CURRENT_TIMESTAMP, completed_total = ? WHERE id = ?",
+    total,
+    listId,
+  );
+
+  response.status(201).json({
+    purchases: await getPurchaseRecords(),
+    lists: await db.all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
+    summary: await getSummary(listId),
+  });
 });
 
 app.delete("/api/lists/:listId", async (request, response) => {
