@@ -104,6 +104,27 @@ function getCategoryStyle(categoryName) {
   return { "--category-accent": getCategoryAccent(categoryName) };
 }
 
+function getSparklinePoints(values, width = 116, height = 42) {
+  const cleanValues = values.map(Number).filter((value) => !Number.isNaN(value));
+  if (cleanValues.length === 0) {
+    return "";
+  }
+
+  const chartValues = cleanValues.length === 1 ? [cleanValues[0], cleanValues[0]] : cleanValues;
+  const min = Math.min(...chartValues);
+  const max = Math.max(...chartValues);
+  const span = max - min || 1;
+  const lastIndex = chartValues.length - 1 || 1;
+
+  return chartValues
+    .map((value, index) => {
+      const x = (index / lastIndex) * width;
+      const y = height - ((value - min) / span) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
 function MerkyLogo({ size = 26 }) {
   return (
     <span className="merky-logo" style={{ "--logo-size": `${size}px` }} aria-hidden="true">
@@ -310,6 +331,50 @@ function App() {
         })),
     [filteredPriceHistory],
   );
+  const priceTrendCards = useMemo(() => {
+    const grouped = filteredPriceHistory.reduce((groups, entry) => {
+      const key = `${entry.productId}-${entry.name}-${entry.category}`;
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+
+      groups[key].push(entry);
+      return groups;
+    }, {});
+
+    return Object.values(grouped)
+      .map((entries) => {
+        const sortedEntries = [...entries].sort(
+          (first, second) =>
+            new Date(first.changedAt) - new Date(second.changedAt) || first.id - second.id,
+        );
+        const values = sortedEntries.flatMap((entry, index) =>
+          index === 0 && entry.oldPrice !== null ? [entry.oldPrice, entry.newPrice] : [entry.newPrice],
+        );
+        const firstEntry = sortedEntries[0];
+        const lastEntry = sortedEntries[sortedEntries.length - 1];
+        const initialPrice = values[0] ?? 0;
+        const currentPrice = values[values.length - 1] ?? 0;
+        const difference = currentPrice - initialPrice;
+        const percent = initialPrice ? (difference / initialPrice) * 100 : 0;
+
+        return {
+          productId: firstEntry.productId,
+          name: firstEntry.name,
+          category: firstEntry.category,
+          initialPrice,
+          currentPrice,
+          difference,
+          percent,
+          points: getSparklinePoints(values),
+          count: values.length,
+          changedAt: lastEntry.changedAt,
+        };
+      })
+      .filter((entry) => entry.points)
+      .sort((first, second) => first.name.localeCompare(second.name, "es", { sensitivity: "base" }))
+      .slice(0, 12);
+  }, [filteredPriceHistory]);
   const previousPricesByProduct = useMemo(
     () =>
       priceHistory.reduce((result, entry) => {
@@ -2082,6 +2147,37 @@ function App() {
                   />
                 </div>
               </div>
+
+              {priceTrendCards.length ? (
+                <section className="price-trends">
+                  <div className="section-head">
+                    <strong>Tendencia por producto</strong>
+                    <span>{priceTrendCards.length}</span>
+                  </div>
+                  <div className="trend-grid">
+                    {priceTrendCards.map((entry) => (
+                      <article className="trend-card" key={`${entry.productId}-${entry.name}`}>
+                        <div className="trend-card-head">
+                          <div>
+                            <strong>{entry.name}</strong>
+                            <span>{entry.category}</span>
+                          </div>
+                          <span className={entry.difference >= 0 ? "trend-badge up" : "trend-badge down"}>
+                            {entry.difference >= 0 ? "+" : ""}{entry.percent.toFixed(1)}%
+                          </span>
+                        </div>
+                        <svg className="sparkline" viewBox="0 0 116 42" role="img" aria-label={`Tendencia de precio de ${entry.name}`}>
+                          <polyline points={entry.points} />
+                        </svg>
+                        <div className="trend-values">
+                          <span>Inicio {currency.format(entry.initialPrice)}</span>
+                          <strong>{currency.format(entry.currentPrice)}</strong>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
 
               {priceChartEntries.length ? (
                 <section className="price-chart">

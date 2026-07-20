@@ -872,6 +872,7 @@ h4 {
 
 .summary-section,
 .price-chart,
+.price-trends,
 .backup-card {
   display: grid;
   gap: 10px;
@@ -951,6 +952,95 @@ h4 {
 
 .purchase-records article > span {
   color: var(--text-strong);
+}
+
+.trend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.trend-card {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, var(--accent-soft), transparent 54%),
+    var(--panel-soft);
+}
+
+.trend-card-head,
+.trend-values {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.trend-card-head > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trend-card strong,
+.trend-card span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trend-card-head strong {
+  color: var(--text-strong);
+  font-size: 0.88rem;
+}
+
+.trend-card-head span,
+.trend-values span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.trend-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 4px 7px;
+  background: var(--panel-solid);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.trend-badge.up {
+  color: var(--danger);
+}
+
+.trend-badge.down {
+  color: var(--accent);
+}
+
+.sparkline {
+  width: 100%;
+  height: 42px;
+  overflow: visible;
+}
+
+.sparkline polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+  filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--accent) 34%, transparent));
+}
+
+.trend-values strong {
+  color: var(--text-strong);
+  font-size: 0.88rem;
 }
 
 label {
@@ -2027,6 +2117,10 @@ select:focus {
   .phone-shell {
     padding-right: 10px;
     padding-left: 10px;
+  }
+
+  .trend-grid {
+    grid-template-columns: 1fr;
   }
 
   .shopping-item {
