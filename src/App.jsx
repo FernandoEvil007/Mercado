@@ -746,6 +746,16 @@ function App() {
       body: JSON.stringify(updates),
     });
     setItems(data.items);
+    if (data.products) {
+      setProducts(data.products);
+    }
+    if (data.priceHistory) {
+      setPriceHistory(data.priceHistory);
+    }
+    if (updates.price !== undefined) {
+      const item = items.find((current) => current.id === itemId);
+      setToast(`Precio de ${item?.name || "producto"} guardado en el historial`);
+    }
   }
 
   async function removeItem(itemId) {

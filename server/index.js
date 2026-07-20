@@ -1174,7 +1174,20 @@ app.post("/api/lists/:listId/items", async (request, response) => {
 
 app.patch("/api/list-items/:itemId", async (request, response) => {
   const itemId = Number(request.params.itemId);
-  const item = await getDb().get("SELECT list_id AS listId FROM list_items WHERE id = ?", itemId);
+  const item = await getDb().get(
+    `
+      SELECT
+        list_items.list_id AS listId,
+        list_items.product_id AS productId,
+        products.name,
+        products.brand,
+        products.price AS productPrice
+      FROM list_items
+      JOIN products ON products.id = list_items.product_id
+      WHERE list_items.id = ?
+    `,
+    itemId,
+  );
 
   if (!item) {
     response.status(404).json({ error: "Item not found." });
@@ -1198,9 +1211,33 @@ app.patch("/api/list-items/:itemId", async (request, response) => {
     }
 
     await getDb().run("UPDATE list_items SET price_snapshot = ? WHERE id = ?", price, itemId);
+    await getDb().run("UPDATE products SET price = ? WHERE id = ?", price, item.productId);
+    await getDb().run(
+      "UPDATE list_items SET price_snapshot = ? WHERE product_id = ? AND checked = 0",
+      price,
+      item.productId,
+    );
+
+    if (item.productPrice !== price) {
+      await getDb().run(
+        "INSERT INTO price_history (product_id, old_price, new_price) VALUES (?, ?, ?)",
+        item.productId,
+        item.productPrice,
+        price,
+      );
+    }
+
+    if (item.brand) {
+      await saveBrandPrice(item.productId, item.brand, price);
+    }
   }
 
-  response.json({ items: await getListItems(item.listId) });
+  response.json({
+    items: await getListItems(item.listId),
+    products: request.body.price !== undefined ? await getProducts() : undefined,
+    priceHistory: request.body.price !== undefined ? await getPriceHistory() : undefined,
+    summary: await getSummary(item.listId),
+  });
 });
 
 app.delete("/api/list-items/:itemId", async (request, response) => {
