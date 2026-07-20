@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BadgeDollarSign,
@@ -162,6 +162,7 @@ async function api(path, options = {}) {
 }
 
 function App() {
+  const categoryTapRef = useRef({ id: null, at: 0 });
   const [session, setSession] = useState(() => getStoredSession());
   const [authMode, setAuthMode] = useState("login");
   const [loginUsername, setLoginUsername] = useState("Fernandoadmin");
@@ -195,6 +196,7 @@ function App() {
   const [productFormMenus, setProductFormMenus] = useState({});
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [editingProductId, setEditingProductId] = useState(null);
+  const [deleteCategoryId, setDeleteCategoryId] = useState(null);
   const [showCategoryCreator, setShowCategoryCreator] = useState(false);
   const [showUnitManager, setShowUnitManager] = useState(false);
   const [categoryName, setCategoryName] = useState("");
@@ -496,6 +498,25 @@ function App() {
     setCategoryDrafts((current) => ({ ...current, [categoryId]: value }));
   }
 
+  function handleCategoryNameClick(event, category) {
+    event.stopPropagation();
+    const now = Date.now();
+    const lastTap = categoryTapRef.current;
+    const isSecondTap = lastTap.id === category.id && now - lastTap.at < 480;
+
+    updateCategoryDraft(category.id, category.name);
+    setEditingCategoryId(category.id);
+    setExpandedCategories((current) => ({ ...current, [category.id]: true }));
+
+    if (isSecondTap) {
+      setDeleteCategoryId((current) => (current === category.id ? null : category.id));
+      categoryTapRef.current = { id: null, at: 0 };
+      return;
+    }
+
+    categoryTapRef.current = { id: category.id, at: now };
+  }
+
   async function saveCategoryName(category) {
     const name = (categoryDrafts[category.id] ?? category.name).trim();
     if (!name || name === category.name) {
@@ -555,6 +576,7 @@ function App() {
       return next;
     });
     setEditingCategoryId(null);
+    setDeleteCategoryId(null);
     setToast(`Categoria ${category.name} eliminada`);
   }
 
@@ -1430,12 +1452,7 @@ function App() {
                         <div>
                           <h4
                             className="category-name-trigger"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              updateCategoryDraft(category.id, category.name);
-                              setEditingCategoryId(category.id);
-                              setExpandedCategories((current) => ({ ...current, [category.id]: true }));
-                            }}
+                            onClick={(event) => handleCategoryNameClick(event, category)}
                           >
                             {category.name}
                           </h4>
@@ -1477,14 +1494,16 @@ function App() {
                             </span>
                             <ChevronDown className={isProductFormOpen ? "chevron open" : "chevron"} size={18} aria-hidden="true" />
                           </button>
-                          <button
-                            className="category-delete-trigger"
-                            type="button"
-                            onClick={() => deleteCategory(category)}
-                          >
-                            <Trash2 size={17} aria-hidden="true" />
-                            Eliminar categoria completa
-                          </button>
+                          {deleteCategoryId === category.id ? (
+                            <button
+                              className="category-delete-trigger"
+                              type="button"
+                              onClick={() => deleteCategory(category)}
+                            >
+                              <Trash2 size={17} aria-hidden="true" />
+                              Eliminar categoria completa
+                            </button>
+                          ) : null}
                           {isProductFormOpen ? (
                             <form className="category-product-form" onSubmit={(event) => createProduct(event, category.id)}>
                               <input
