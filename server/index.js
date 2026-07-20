@@ -92,6 +92,7 @@ await db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_id INTEGER NOT NULL UNIQUE,
     quantity REAL NOT NULL DEFAULT 0,
+    min_quantity REAL NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
   );
@@ -106,6 +107,8 @@ await db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_id INTEGER NOT NULL,
     name TEXT NOT NULL,
+    price REAL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     UNIQUE(product_id, name)
@@ -121,6 +124,20 @@ if (!productColumns.some((column) => column.name === "unit")) {
 }
 if (!productColumns.some((column) => column.name === "presentation_quantity")) {
   await db.run("ALTER TABLE products ADD COLUMN presentation_quantity REAL NOT NULL DEFAULT 1");
+}
+
+const inventoryColumns = await db.all("PRAGMA table_info(inventory)");
+if (!inventoryColumns.some((column) => column.name === "min_quantity")) {
+  await db.run("ALTER TABLE inventory ADD COLUMN min_quantity REAL NOT NULL DEFAULT 0");
+}
+
+const brandColumns = await db.all("PRAGMA table_info(product_brands)");
+if (!brandColumns.some((column) => column.name === "price")) {
+  await db.run("ALTER TABLE product_brands ADD COLUMN price REAL");
+}
+if (!brandColumns.some((column) => column.name === "updated_at")) {
+  await db.run("ALTER TABLE product_brands ADD COLUMN updated_at TEXT");
+  await db.run("UPDATE product_brands SET updated_at = COALESCE(created_at, CURRENT_TIMESTAMP)");
 }
 
 for (const [categoryName, productName, price] of seedProducts) {
@@ -181,8 +198,22 @@ async function getUnits() {
   return db.all("SELECT id, name FROM measurement_units ORDER BY name");
 }
 
+async function saveBrandPrice(productId, name, price) {
+  const brand = normalizeText(name);
+  if (!brand) {
+    return;
+  }
+
+  await db.run(
+    "INSERT INTO product_brands (product_id, name, price, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(product_id, name) DO UPDATE SET price = excluded.price, updated_at = CURRENT_TIMESTAMP",
+    productId,
+    brand,
+    price,
+  );
+}
+
 async function getProducts() {
-  return db.all(`
+  const products = await db.all(`
     SELECT
       products.id,
       products.name,
@@ -201,15 +232,28 @@ async function getProducts() {
       GROUP BY product_id
     ) AS brand_list ON brand_list.product_id = products.id
     ORDER BY categories.name, products.name
-  `).then((products) =>
-    products.map((product) => ({
+  `);
+  const brandRows = await db.all(`
+    SELECT product_id AS productId, name, price, updated_at AS updatedAt
+    FROM product_brands
+    ORDER BY name COLLATE NOCASE
+  `);
+  const brandsByProduct = brandRows.reduce((groups, brand) => {
+    if (!groups[brand.productId]) {
+      groups[brand.productId] = [];
+    }
+    groups[brand.productId].push(brand);
+    return groups;
+  }, {});
+
+  return products.map((product) => ({
       ...product,
       brandOptions: product.brandOptionsText
         ? product.brandOptionsText.split("|||").filter(Boolean).sort((first, second) => first.localeCompare(second, "es", { sensitivity: "base" }))
         : [],
+      brandPrices: brandsByProduct[product.id] || [],
       brandOptionsText: undefined,
-    })),
-  );
+    }));
 }
 
 async function getListItems(listId) {
@@ -243,6 +287,7 @@ async function getInventory() {
       inventory.id,
       inventory.product_id AS productId,
       inventory.quantity,
+      inventory.min_quantity AS minQuantity,
       inventory.updated_at AS updatedAt,
       products.name,
       products.brand,
@@ -274,6 +319,38 @@ async function getPriceHistory() {
   `);
 }
 
+async function getSummary(activeListId = null) {
+  const [products, inventory, priceHistory] = await Promise.all([
+    getProducts(),
+    getInventory(),
+    getPriceHistory(),
+  ]);
+  const items = activeListId ? await getListItems(activeListId) : [];
+  const lowStock = inventory.filter((item) => item.minQuantity > 0 && item.quantity <= item.minQuantity);
+  const estimatedListTotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
+  const checkedItems = items.filter((item) => item.checked).length;
+  const priceChanges = priceHistory
+    .filter((entry) => entry.oldPrice !== null)
+    .slice(0, 8)
+    .map((entry) => ({
+      ...entry,
+      difference: entry.newPrice - entry.oldPrice,
+      percent: entry.oldPrice ? ((entry.newPrice - entry.oldPrice) / entry.oldPrice) * 100 : 0,
+    }));
+
+  return {
+    productCount: products.length,
+    inventoryCount: inventory.filter((item) => item.quantity > 0).length,
+    lowStockCount: lowStock.length,
+    lowStock,
+    listItemCount: items.length,
+    checkedItems,
+    pendingItems: items.length - checkedItems,
+    estimatedListTotal,
+    priceChanges,
+  };
+}
+
 app.get("/api/bootstrap", async (_request, response) => {
   const [categories, products, lists, priceHistory, inventory, units] = await Promise.all([
     db.all("SELECT id, name FROM categories ORDER BY name"),
@@ -286,8 +363,50 @@ app.get("/api/bootstrap", async (_request, response) => {
 
   const activeListId = lists[0]?.id ?? null;
   const items = activeListId ? await getListItems(activeListId) : [];
+  const summary = await getSummary(activeListId);
 
-  response.json({ categories, products, lists, activeListId, items, priceHistory, inventory, units });
+  response.json({ categories, products, lists, activeListId, items, priceHistory, inventory, units, summary });
+});
+
+app.get("/api/summary", async (request, response) => {
+  const listId = Number(request.query.listId);
+  response.json({ summary: await getSummary(listId || null) });
+});
+
+app.get("/api/export", async (_request, response) => {
+  const [
+    categories,
+    products,
+    productBrands,
+    inventory,
+    priceHistory,
+    shoppingLists,
+    listItems,
+    units,
+  ] = await Promise.all([
+    db.all("SELECT * FROM categories ORDER BY name"),
+    db.all("SELECT * FROM products ORDER BY name"),
+    db.all("SELECT * FROM product_brands ORDER BY product_id, name"),
+    db.all("SELECT * FROM inventory ORDER BY product_id"),
+    db.all("SELECT * FROM price_history ORDER BY changed_at DESC, id DESC"),
+    db.all("SELECT * FROM shopping_lists ORDER BY id DESC"),
+    db.all("SELECT * FROM list_items ORDER BY list_id, id"),
+    db.all("SELECT * FROM measurement_units ORDER BY name"),
+  ]);
+
+  response.setHeader("Content-Type", "application/json");
+  response.setHeader("Content-Disposition", `attachment; filename="mercardo-respaldo-${new Date().toISOString().slice(0, 10)}.json"`);
+  response.json({
+    exportedAt: new Date().toISOString(),
+    categories,
+    products,
+    productBrands,
+    inventory,
+    priceHistory,
+    shoppingLists,
+    listItems,
+    units,
+  });
 });
 
 app.get("/api/inventory", async (_request, response) => {
@@ -431,7 +550,7 @@ app.post("/api/products", async (request, response) => {
   }
 
   if (brand) {
-    await db.run("INSERT OR IGNORE INTO product_brands (product_id, name) VALUES (?, ?)", product.id, brand);
+    await saveBrandPrice(product.id, brand, price);
   }
 
   response.status(201).json({
@@ -467,7 +586,7 @@ app.patch("/api/products/:productId", async (request, response) => {
     return;
   }
 
-  const product = await db.get("SELECT id, name, price, category_id AS categoryId FROM products WHERE id = ?", productId);
+  const product = await db.get("SELECT id, name, brand, price, category_id AS categoryId FROM products WHERE id = ?", productId);
   if (!product) {
     response.status(404).json({ error: "Product not found." });
     return;
@@ -529,9 +648,12 @@ app.patch("/api/products/:productId", async (request, response) => {
 
   if (hasBrand) {
     await db.run("UPDATE products SET brand = ? WHERE id = ?", brand, productId);
-    if (brand) {
-      await db.run("INSERT OR IGNORE INTO product_brands (product_id, name) VALUES (?, ?)", productId, brand);
-    }
+  }
+
+  const finalBrand = hasBrand ? brand : product.brand;
+  const finalPrice = hasPrice ? price : product.price;
+  if ((hasBrand || hasPrice) && finalBrand) {
+    await saveBrandPrice(productId, finalBrand, finalPrice);
   }
 
   if (hasUnit) {
@@ -570,9 +692,17 @@ app.delete("/api/products/:productId", async (request, response) => {
 
 app.patch("/api/inventory/:productId", async (request, response) => {
   const productId = Number(request.params.productId);
+  const hasQuantity = request.body.quantity !== undefined;
+  const hasMinQuantity = request.body.minQuantity !== undefined;
   const quantity = Number(request.body.quantity);
+  const minQuantity = Number(request.body.minQuantity);
 
-  if (!productId || Number.isNaN(quantity) || quantity < 0) {
+  if (
+    !productId ||
+    (!hasQuantity && !hasMinQuantity) ||
+    (hasQuantity && (Number.isNaN(quantity) || quantity < 0)) ||
+    (hasMinQuantity && (Number.isNaN(minQuantity) || minQuantity < 0))
+  ) {
     response.status(400).json({ error: "Valid product and quantity are required." });
     return;
   }
@@ -583,10 +713,15 @@ app.patch("/api/inventory/:productId", async (request, response) => {
     return;
   }
 
+  const current = await db.get("SELECT quantity, min_quantity AS minQuantity FROM inventory WHERE product_id = ?", productId);
+  const nextQuantity = hasQuantity ? quantity : current?.quantity ?? 0;
+  const nextMinQuantity = hasMinQuantity ? minQuantity : current?.minQuantity ?? 0;
+
   await db.run(
-    "INSERT INTO inventory (product_id, quantity, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(product_id) DO UPDATE SET quantity = excluded.quantity, updated_at = CURRENT_TIMESTAMP",
+    "INSERT INTO inventory (product_id, quantity, min_quantity, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(product_id) DO UPDATE SET quantity = excluded.quantity, min_quantity = excluded.min_quantity, updated_at = CURRENT_TIMESTAMP",
     productId,
-    quantity,
+    nextQuantity,
+    nextMinQuantity,
   );
 
   response.json({ inventory: await getInventory() });

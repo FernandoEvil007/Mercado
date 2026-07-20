@@ -237,6 +237,7 @@ h4 {
 .list-panel,
 .history-panel,
 .inventory-panel,
+.summary-panel,
 .settings-panel {
   padding: 14px;
 }
@@ -252,11 +253,36 @@ h4 {
   align-items: flex-start;
 }
 
+.list-title > div {
+  min-width: 0;
+}
+
 .list-title p {
   margin-top: 3px;
   color: #68796f;
   color: var(--muted);
   font-size: 0.86rem;
+}
+
+.share-list-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  margin-left: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0 10px;
+  background: var(--panel-solid);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.share-list-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .shopping-progress {
@@ -304,6 +330,121 @@ h4 {
   color: var(--muted);
   font-size: 0.84rem;
   font-weight: 750;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.summary-grid article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--panel-solid);
+}
+
+.summary-grid article svg {
+  color: var(--accent);
+}
+
+.summary-grid article.warning svg,
+.summary-grid article.warning strong {
+  color: var(--danger);
+}
+
+.summary-grid article span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.summary-grid article strong {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+  color: var(--text-strong);
+  font-size: 1.15rem;
+}
+
+.summary-section,
+.price-chart,
+.backup-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--panel-solid);
+}
+
+.section-head,
+.backup-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-head strong,
+.backup-card strong {
+  color: var(--text-strong);
+}
+
+.section-head span,
+.quiet-text,
+.backup-card span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.compact-list {
+  display: grid;
+  gap: 8px;
+}
+
+.compact-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 13px;
+  background: var(--panel-soft);
+}
+
+.compact-list article div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.compact-list strong,
+.compact-list span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-list article > span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.compact-list .up {
+  color: var(--danger);
+}
+
+.compact-list .down {
+  color: var(--accent);
 }
 
 label {
@@ -756,6 +897,9 @@ select:focus {
 }
 
 .brand-option {
+  display: inline-grid;
+  gap: 1px;
+  align-content: center;
   min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -766,9 +910,27 @@ select:focus {
   font-weight: 800;
 }
 
+.brand-option span,
+.brand-option small {
+  line-height: 1.05;
+}
+
+.brand-option span {
+  color: inherit;
+}
+
+.brand-option small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
 .brand-option.active {
   border-color: var(--accent);
   background: var(--accent);
+  color: white;
+}
+
+.brand-option.active small {
   color: white;
 }
 
@@ -918,6 +1080,66 @@ select:focus {
   background: var(--panel-solid);
 }
 
+.chart-bars {
+  display: grid;
+  gap: 10px;
+}
+
+.chart-bars article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(72px, 0.55fr) auto;
+  gap: 9px;
+  align-items: center;
+}
+
+.chart-bars article > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chart-bars strong,
+.chart-bars span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-bars span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.bar-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-soft);
+}
+
+.bar-track span {
+  display: block;
+  height: 100%;
+  min-width: 8px;
+  border-radius: inherit;
+}
+
+.bar-track .up {
+  background: var(--danger);
+}
+
+.bar-track .down {
+  background: var(--accent);
+}
+
+.chart-bars strong.up {
+  color: var(--danger);
+}
+
+.chart-bars strong.down {
+  color: var(--accent);
+}
+
 .history-row > div:first-child,
 .history-prices {
   display: grid;
@@ -964,6 +1186,15 @@ select:focus {
   border-bottom: 1px solid var(--border-soft);
 }
 
+.inventory-row.low-stock {
+  background: color-mix(in srgb, var(--danger) 8%, var(--panel-solid));
+}
+
+.inventory-row.low-stock .inventory-product-info span {
+  color: var(--danger);
+  font-weight: 850;
+}
+
 .inventory-row:last-child {
   border-bottom: 0;
 }
@@ -1005,7 +1236,7 @@ select:focus {
 
 @media (min-width: 520px) {
   .inventory-row {
-    grid-template-columns: minmax(0, 1fr) minmax(120px, 0.5fr);
+    grid-template-columns: minmax(0, 1fr) minmax(100px, 0.45fr) minmax(100px, 0.45fr);
   }
 
   .inventory-product-info {
@@ -1019,7 +1250,7 @@ select:focus {
   bottom: 12px;
   left: max(12px, calc((100vw - 520px) / 2 + 12px));
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   padding: 6px;
   border: 1px solid var(--border);

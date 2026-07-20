@@ -1,12 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   BadgeDollarSign,
+  BarChart3,
   Check,
   ChevronDown,
   ClipboardList,
+  Download,
   FolderPlus,
   History,
   House,
+  LayoutDashboard,
   Layers3,
   Moon,
   PackagePlus,
@@ -15,12 +19,13 @@ import {
   Ruler,
   Search,
   Settings,
+  Share2,
   ShoppingBasket,
   Sun,
   Trash2,
 } from "lucide-react";
 
-const API_URL = "http://127.0.0.1:3001/api";
+const API_URL = import.meta.env.DEV ? "http://127.0.0.1:3001/api" : "/api";
 
 const currency = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -110,6 +115,7 @@ function App() {
   const [units, setUnits] = useState(fallbackUnits.map((name, index) => ({ id: `fallback-${index}`, name })));
   const [categoryDrafts, setCategoryDrafts] = useState({});
   const [inventoryDrafts, setInventoryDrafts] = useState({});
+  const [minimumDrafts, setMinimumDrafts] = useState({});
   const [productDrafts, setProductDrafts] = useState({});
   const [brandDrafts, setBrandDrafts] = useState({});
   const [brandMenus, setBrandMenus] = useState({});
@@ -186,11 +192,16 @@ function App() {
       products.map((product) => ({
         ...product,
         quantity: inventoryByProduct[product.id]?.quantity ?? 0,
+        minQuantity: inventoryByProduct[product.id]?.minQuantity ?? 0,
         updatedAt: inventoryByProduct[product.id]?.updatedAt ?? null,
       })),
     [products, inventoryByProduct],
   );
   const groupedInventory = useMemo(() => groupByCategory(inventoryProducts), [inventoryProducts]);
+  const lowStockProducts = useMemo(
+    () => inventoryProducts.filter((product) => product.minQuantity > 0 && product.quantity <= product.minQuantity),
+    [inventoryProducts],
+  );
   const groupedListItems = useMemo(() => {
     const sortedItems = [...items].sort((first, second) => {
       const byCategory = first.category.localeCompare(second.category, "es", { sensitivity: "base" });
@@ -229,6 +240,18 @@ function App() {
       return new Date(second.changedAt) - new Date(first.changedAt);
     });
   }, [priceHistory, historyQuery]);
+  const priceChartEntries = useMemo(
+    () =>
+      filteredPriceHistory
+        .filter((entry) => entry.oldPrice !== null)
+        .slice(0, 8)
+        .map((entry) => ({
+          ...entry,
+          difference: entry.newPrice - entry.oldPrice,
+          percent: entry.oldPrice ? ((entry.newPrice - entry.oldPrice) / entry.oldPrice) * 100 : 0,
+        })),
+    [filteredPriceHistory],
+  );
   const totals = useMemo(
     () =>
       items.reduce(
@@ -242,6 +265,24 @@ function App() {
     [items],
   );
   const shoppingProgress = items.length ? Math.round((totals.checked / items.length) * 100) : 0;
+  const summary = useMemo(() => {
+    const priceChanges = priceHistory
+      .filter((entry) => entry.oldPrice !== null)
+      .slice(0, 5)
+      .map((entry) => ({
+        ...entry,
+        difference: entry.newPrice - entry.oldPrice,
+      }));
+
+    return {
+      productCount: products.length,
+      inventoryCount: inventoryProducts.filter((product) => product.quantity > 0).length,
+      lowStockCount: lowStockProducts.length,
+      pendingItems: items.length - totals.checked,
+      estimatedListTotal: totals.amount,
+      priceChanges,
+    };
+  }, [inventoryProducts, items.length, lowStockProducts.length, priceHistory, products.length, totals.amount, totals.checked]);
 
   async function createCategory(event) {
     event.preventDefault();
@@ -421,6 +462,31 @@ function App() {
     setToast(`${product?.name || "Producto"} agregado a tu lista`);
   }
 
+  async function shareCurrentList() {
+    const listLines = Object.entries(groupedListItems).flatMap(([categoryName, categoryItems]) => [
+      categoryName,
+      ...categoryItems.map((item) => {
+        const checked = item.checked ? "[x]" : "[ ]";
+        const brand = item.brand ? ` - ${item.brand}` : "";
+        return `${checked} ${item.name}${brand} x${item.quantity}`;
+      }),
+      "",
+    ]);
+    const text = `${activeList?.name || "Mi lista de mercado"}\n\n${listLines.join("\n").trim()}`;
+
+    if (navigator.share) {
+      await navigator.share({ title: activeList?.name || "Mi lista de mercado", text });
+      return;
+    }
+
+    await navigator.clipboard.writeText(text);
+    setToast("Lista copiada para compartir");
+  }
+
+  function exportBackup() {
+    window.open(`${API_URL}/export`, "_blank", "noopener,noreferrer");
+  }
+
   function updatePriceDraft(productId, value) {
     setPriceDrafts((current) => ({ ...current, [productId]: value }));
   }
@@ -460,22 +526,26 @@ function App() {
     setToast(`${product.name} ahora es ${name}`);
   }
 
-  async function saveProductBrand(product, nextBrand) {
+  async function saveProductBrand(product, nextBrand, nextPrice) {
     const brand = (nextBrand ?? brandDrafts[product.id] ?? product.brand ?? "").trim();
-    if (brand === (product.brand || "")) {
+    const hasSavedPrice = nextPrice !== undefined && nextPrice !== null;
+    if (brand === (product.brand || "") && !hasSavedPrice) {
       updateBrandDraft(product.id, undefined);
       return;
     }
 
     const data = await api(`/products/${product.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ brand }),
+      body: JSON.stringify(hasSavedPrice ? { brand, price: nextPrice } : { brand }),
     });
     setProducts(data.products);
+    setPriceHistory(data.priceHistory || priceHistory);
     setInventory(data.inventory || inventory);
     setItems((current) =>
       current.map((item) =>
-        item.productId === product.id ? { ...item, brand } : item,
+        item.productId === product.id
+          ? { ...item, brand, price: hasSavedPrice && !item.checked ? nextPrice : item.price }
+          : item,
       ),
     );
     updateBrandDraft(product.id, undefined);
@@ -544,6 +614,11 @@ function App() {
       delete next[product.id];
       return next;
     });
+    setMinimumDrafts((current) => {
+      const next = { ...current };
+      delete next[product.id];
+      return next;
+    });
     setPriceDrafts((current) => {
       const next = { ...current };
       delete next[product.id];
@@ -576,6 +651,10 @@ function App() {
     setInventoryDrafts((current) => ({ ...current, [productId]: value }));
   }
 
+  function updateMinimumDraft(productId, value) {
+    setMinimumDrafts((current) => ({ ...current, [productId]: value }));
+  }
+
   async function saveInventory(product) {
     const value = inventoryDrafts[product.id];
     if (value === undefined || value === "") {
@@ -595,6 +674,27 @@ function App() {
     setInventory(data.inventory);
     updateInventoryDraft(product.id, undefined);
     setToast(`Inventario de ${product.name} actualizado`);
+  }
+
+  async function saveMinimumInventory(product) {
+    const value = minimumDrafts[product.id];
+    if (value === undefined || value === "") {
+      return;
+    }
+
+    const minQuantity = Number(value);
+    if (Number.isNaN(minQuantity) || minQuantity < 0 || minQuantity === product.minQuantity) {
+      updateMinimumDraft(product.id, undefined);
+      return;
+    }
+
+    const data = await api(`/inventory/${product.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ minQuantity }),
+    });
+    setInventory(data.inventory);
+    updateMinimumDraft(product.id, undefined);
+    setToast(`Minimo de ${product.name} actualizado`);
   }
 
   async function updateProductPresentation(product, updates) {
@@ -769,6 +869,84 @@ function App() {
                   </div>
                 ))}
               </div>
+            </section>
+          ) : null}
+
+          {activeView === "summary" ? (
+            <section className="panel summary-panel">
+              <div className="panel-title">
+                <LayoutDashboard size={20} aria-hidden="true" />
+                <h3>Resumen</h3>
+              </div>
+
+              <div className="summary-grid">
+                <article>
+                  <PackagePlus size={18} aria-hidden="true" />
+                  <span>Productos</span>
+                  <strong>{summary.productCount}</strong>
+                </article>
+                <article>
+                  <ShoppingBasket size={18} aria-hidden="true" />
+                  <span>Pendientes</span>
+                  <strong>{summary.pendingItems}</strong>
+                </article>
+                <article>
+                  <BadgeDollarSign size={18} aria-hidden="true" />
+                  <span>Total lista</span>
+                  <strong>{currency.format(summary.estimatedListTotal)}</strong>
+                </article>
+                <article className={summary.lowStockCount ? "warning" : ""}>
+                  <AlertTriangle size={18} aria-hidden="true" />
+                  <span>Baja existencia</span>
+                  <strong>{summary.lowStockCount}</strong>
+                </article>
+              </div>
+
+              <section className="summary-section">
+                <div className="section-head">
+                  <strong>Alertas de inventario</strong>
+                  <span>{summary.lowStockCount}</span>
+                </div>
+                {lowStockProducts.length ? (
+                  <div className="compact-list">
+                    {lowStockProducts.slice(0, 6).map((product) => (
+                      <article key={product.id}>
+                        <div>
+                          <strong>{product.name}</strong>
+                          <span>{product.category}</span>
+                        </div>
+                        <span>{product.quantity} / min {product.minQuantity}</span>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="quiet-text">No hay productos por debajo del minimo.</p>
+                )}
+              </section>
+
+              <section className="summary-section">
+                <div className="section-head">
+                  <strong>Cambios recientes</strong>
+                  <span>{summary.priceChanges.length}</span>
+                </div>
+                {summary.priceChanges.length ? (
+                  <div className="compact-list">
+                    {summary.priceChanges.map((entry) => (
+                      <article key={entry.id}>
+                        <div>
+                          <strong>{entry.name}</strong>
+                          <span>{formatHistoryDate(entry.changedAt)}</span>
+                        </div>
+                        <span className={entry.difference >= 0 ? "up" : "down"}>
+                          {entry.difference >= 0 ? "+" : ""}{currency.format(entry.difference)}
+                        </span>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="quiet-text">Aun no hay variaciones de precio.</p>
+                )}
+              </section>
             </section>
           ) : null}
 
@@ -975,16 +1153,17 @@ function App() {
                                         </button>
                                         {brandMenus[product.id] ? (
                                           <div className="brand-options">
-                                            {product.brandOptions?.length ? (
-                                              product.brandOptions.map((brand) => (
+                                            {product.brandPrices?.length ? (
+                                              product.brandPrices.map((brand) => (
                                                 <button
-                                                  className={brand === product.brand ? "brand-option active" : "brand-option"}
+                                                  className={brand.name === product.brand ? "brand-option active" : "brand-option"}
                                                   type="button"
-                                                  key={brand}
+                                                  key={brand.name}
                                                   onMouseDown={(event) => event.preventDefault()}
-                                                  onClick={() => saveProductBrand(product, brand)}
+                                                  onClick={() => saveProductBrand(product, brand.name, brand.price)}
                                                 >
-                                                  {brand}
+                                                  <span>{brand.name}</span>
+                                                  {brand.price !== null && brand.price !== undefined ? <small>{currency.format(brand.price)}</small> : null}
                                                 </button>
                                               ))
                                             ) : (
@@ -1168,6 +1347,17 @@ function App() {
                   </div>
                 ) : null}
               </section>
+
+              <section className="backup-card">
+                <div>
+                  <strong>Respaldo de datos</strong>
+                  <span>Exporta productos, marcas, inventario, listas e historial.</span>
+                </div>
+                <button className="primary-button" type="button" onClick={exportBackup}>
+                  <Download size={18} aria-hidden="true" />
+                  Exportar
+                </button>
+              </section>
             </section>
           ) : null}
 
@@ -1179,6 +1369,15 @@ function App() {
                   <h3>{activeList?.name || "Lista sin seleccionar"}</h3>
                   <p>{totals.checked} de {items.length} productos comprados</p>
                 </div>
+                <button
+                  className="share-list-button"
+                  type="button"
+                  onClick={shareCurrentList}
+                  disabled={items.length === 0}
+                >
+                  <Share2 size={17} aria-hidden="true" />
+                  Compartir
+                </button>
               </div>
 
               <section className="shopping-progress" aria-label="Avance de compras">
@@ -1281,10 +1480,18 @@ function App() {
                       </div>
                       <div className="inventory-products">
                         {categoryInventory.map((product) => (
-                          <div className="inventory-row" key={product.id}>
+                          <div
+                            className={product.minQuantity > 0 && product.quantity <= product.minQuantity ? "inventory-row low-stock" : "inventory-row"}
+                            key={product.id}
+                          >
                             <div className="inventory-product-info">
                               <strong>{product.name}</strong>
-                              {product.brand ? <span>{product.brand}</span> : null}
+                              <span>
+                                {[
+                                  product.brand,
+                                  product.minQuantity > 0 && product.quantity <= product.minQuantity ? "Baja existencia" : null,
+                                ].filter(Boolean).join(" - ")}
+                              </span>
                             </div>
                             <label className="inventory-editor">
                               Existencia
@@ -1301,6 +1508,23 @@ function App() {
                                 min="0"
                                 step="0.1"
                                 aria-label={`Cantidad en inventario de ${product.name}`}
+                              />
+                            </label>
+                            <label className="inventory-editor">
+                              Minimo
+                              <input
+                                value={minimumDrafts[product.id] ?? product.minQuantity}
+                                onChange={(event) => updateMinimumDraft(product.id, event.target.value)}
+                                onBlur={() => saveMinimumInventory(product)}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") {
+                                    event.currentTarget.blur();
+                                  }
+                                }}
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                aria-label={`Minimo en inventario de ${product.name}`}
                               />
                             </label>
                           </div>
@@ -1329,6 +1553,37 @@ function App() {
                   />
                 </div>
               </div>
+
+              {priceChartEntries.length ? (
+                <section className="price-chart">
+                  <div className="section-head">
+                    <strong>Variacion de precios</strong>
+                    <BarChart3 size={18} aria-hidden="true" />
+                  </div>
+                  <div className="chart-bars">
+                    {priceChartEntries.map((entry) => {
+                      const width = Math.min(100, Math.max(8, Math.abs(entry.percent)));
+                      return (
+                        <article key={entry.id}>
+                          <div>
+                            <strong>{entry.name}</strong>
+                            <span>{entry.oldPrice === null ? "Inicial" : currency.format(entry.oldPrice)} a {currency.format(entry.newPrice)}</span>
+                          </div>
+                          <div className="bar-track">
+                            <span
+                              className={entry.difference >= 0 ? "up" : "down"}
+                              style={{ width: `${width}%` }}
+                            />
+                          </div>
+                          <strong className={entry.difference >= 0 ? "up" : "down"}>
+                            {entry.difference >= 0 ? "+" : ""}{currency.format(entry.difference)}
+                          </strong>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+              ) : null}
 
               {filteredPriceHistory.length === 0 ? (
                 <div className="empty-state">
@@ -1362,6 +1617,14 @@ function App() {
         </section>
 
         <nav className="bottom-nav" aria-label="Navegacion principal">
+          <button
+            className={activeView === "summary" ? "active" : ""}
+            type="button"
+            onClick={() => setActiveView("summary")}
+          >
+            <LayoutDashboard size={20} aria-hidden="true" />
+            Resumen
+          </button>
           <button
             className={activeView === "catalog" ? "active" : ""}
             type="button"
