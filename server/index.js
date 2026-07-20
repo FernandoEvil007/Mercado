@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import crypto from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,10 @@ const dataDir = path.join(__dirname, "data");
 const dbPath = path.join(dataDir, "mercardo.sqlite");
 const port = Number(process.env.PORT || 3001);
 const defaultUnits = ["kilo", "gramos", "litros", "unidad", "frasco", "pote", "sobre", "caja"];
+const adminUsername = process.env.ADMIN_USERNAME || "Fernandoadmin";
+const isHostedEnvironment = Boolean(process.env.RENDER || process.env.PORT || process.env.NODE_ENV === "production");
+const adminAccessCode = process.env.ADMIN_ACCESS_CODE || (isHostedEnvironment ? "" : "1234");
+const sessions = new Map();
 
 const seedProducts = [
   ["Despensa", "Arroz", 4500],
@@ -206,6 +211,58 @@ if (listCount.total === 0) {
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+function isValidSecret(value, expected) {
+  const incoming = Buffer.from(String(value || ""));
+  const current = Buffer.from(String(expected || ""));
+  return incoming.length === current.length && crypto.timingSafeEqual(incoming, current);
+}
+
+function createSession(username) {
+  const token = crypto.randomBytes(32).toString("hex");
+  sessions.set(token, { username, createdAt: Date.now() });
+  return token;
+}
+
+function requireAdmin(request, response, next) {
+  const header = request.get("authorization") || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  const session = sessions.get(token);
+
+  if (!session || session.username !== adminUsername) {
+    response.status(401).json({ error: "Admin session required." });
+    return;
+  }
+
+  request.admin = session;
+  next();
+}
+
+app.get("/api/health", async (_request, response) => {
+  response.json({
+    ok: true,
+    protected: true,
+  });
+});
+
+app.post("/api/session", (request, response) => {
+  const username = String(request.body.username || "").trim();
+  const accessCode = String(request.body.accessCode || "");
+
+  if (!adminAccessCode) {
+    response.status(503).json({ error: "Admin access code is not configured." });
+    return;
+  }
+
+  if (username !== adminUsername || !isValidSecret(accessCode, adminAccessCode)) {
+    response.status(401).json({ error: "Invalid admin credentials." });
+    return;
+  }
+
+  response.status(201).json({ token: createSession(username), user: { username } });
+});
+
+app.use("/api", requireAdmin);
 
 function normalizeText(value) {
   return String(value || "").trim();
@@ -437,15 +494,6 @@ app.get("/api/bootstrap", async (_request, response) => {
   const summary = await getSummary(activeListId);
 
   response.json({ categories, products, lists, activeListId, items, priceHistory, inventory, units, purchases, summary });
-});
-
-app.get("/api/health", async (_request, response) => {
-  const productCount = await db.get("SELECT COUNT(*) AS total FROM products");
-  response.json({
-    ok: true,
-    database: path.relative(path.join(__dirname, ".."), dbPath),
-    products: productCount.total,
-  });
 });
 
 app.get("/api/summary", async (request, response) => {

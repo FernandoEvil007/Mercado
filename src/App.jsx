@@ -36,6 +36,7 @@ const currency = new Intl.NumberFormat("es-CO", {
 
 const fallbackUnits = ["kilo", "gramos", "litros", "unidad", "frasco", "pote", "sobre", "caja"];
 const emptyProductDraft = { name: "", brand: "", price: "", presentationQuantity: "1", unit: "unidad" };
+const sessionStorageKey = "merky-admin-session";
 
 const dateFormatter = new Intl.DateTimeFormat("es-CO", {
   dateStyle: "medium",
@@ -89,10 +90,25 @@ function groupByCategory(products) {
   }, {});
 }
 
+function getStoredSession() {
+  try {
+    return JSON.parse(localStorage.getItem(sessionStorageKey) || "null");
+  } catch {
+    localStorage.removeItem(sessionStorageKey);
+    return null;
+  }
+}
+
 async function api(path, options = {}) {
+  const session = getStoredSession();
+  const headers = {
+    "Content-Type": "application/json",
+    ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+    ...(options.headers || {}),
+  };
   const response = await fetch(`${API_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers,
   });
 
   if (!response.ok) {
@@ -103,6 +119,10 @@ async function api(path, options = {}) {
 }
 
 function App() {
+  const [session, setSession] = useState(() => getStoredSession());
+  const [loginUsername, setLoginUsername] = useState("Fernandoadmin");
+  const [loginAccessCode, setLoginAccessCode] = useState("");
+  const [loginStatus, setLoginStatus] = useState("");
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [lists, setLists] = useState([]);
@@ -140,6 +160,11 @@ function App() {
   const [toast, setToast] = useState("");
 
   useEffect(() => {
+    if (!session?.token) {
+      setStatus("");
+      return;
+    }
+
     api("/bootstrap")
       .then((data) => {
         setCategories(data.categories);
@@ -153,8 +178,13 @@ function App() {
         setUnits(data.units?.length ? data.units : fallbackUnits.map((name, index) => ({ id: `fallback-${index}`, name })));
         setStatus("");
       })
-      .catch(() => setStatus("No se pudo conectar con la base de datos."));
-  }, []);
+      .catch(() => {
+        localStorage.removeItem(sessionStorageKey);
+        setSession(null);
+        setStatus("");
+        setLoginStatus("La sesion vencio o no tiene permiso.");
+      });
+  }, [session?.token]);
 
   useEffect(() => {
     localStorage.setItem("mercardo-theme", theme);
@@ -298,6 +328,38 @@ function App() {
       priceChanges,
     };
   }, [inventoryProducts, items.length, lowStockProducts.length, priceHistory, products.length, totals.amount, totals.checked]);
+
+  async function loginAdmin(event) {
+    event.preventDefault();
+    setLoginStatus("Validando acceso...");
+
+    try {
+      const data = await api("/session", {
+        method: "POST",
+        body: JSON.stringify({ username: loginUsername.trim(), accessCode: loginAccessCode }),
+      });
+      localStorage.setItem(sessionStorageKey, JSON.stringify({ token: data.token, user: data.user }));
+      setSession({ token: data.token, user: data.user });
+      setLoginAccessCode("");
+      setLoginStatus("");
+      setStatus("Cargando datos...");
+    } catch {
+      setLoginStatus("Usuario o clave incorrectos.");
+    }
+  }
+
+  function logoutAdmin() {
+    localStorage.removeItem(sessionStorageKey);
+    setSession(null);
+    setCategories([]);
+    setProducts([]);
+    setLists([]);
+    setItems([]);
+    setInventory([]);
+    setPriceHistory([]);
+    setPurchases([]);
+    setToast("Sesion cerrada");
+  }
 
   async function createCategory(event) {
     event.preventDefault();
@@ -844,6 +906,48 @@ function App() {
     return dateFormatter.format(date);
   }
 
+  if (!session?.token) {
+    return (
+      <main className="app mobile-app" data-theme={theme}>
+        <section className="login-shell">
+          <div className="login-card">
+            <div className="brand-mark">
+              <ShoppingBasket size={26} aria-hidden="true" />
+            </div>
+            <div>
+              <p className="eyebrow">Base protegida</p>
+              <h1>Merky</h1>
+            </div>
+            <form className="login-form" onSubmit={loginAdmin}>
+              <label>
+                Usuario
+                <input
+                  value={loginUsername}
+                  onChange={(event) => setLoginUsername(event.target.value)}
+                  autoComplete="username"
+                />
+              </label>
+              <label>
+                Clave de acceso
+                <input
+                  value={loginAccessCode}
+                  onChange={(event) => setLoginAccessCode(event.target.value)}
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Clave privada"
+                />
+              </label>
+              <button className="primary-button" type="submit">
+                Entrar como administrador
+              </button>
+            </form>
+            {loginStatus ? <div className="status-bar">{loginStatus}</div> : null}
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="app mobile-app" data-theme={theme}>
       <section className="phone-shell">
@@ -863,6 +967,13 @@ function App() {
               aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
             >
               {theme === "dark" ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}
+            </button>
+            <button
+              className="logout-button"
+              type="button"
+              onClick={logoutAdmin}
+            >
+              Salir
             </button>
           </div>
           <div>
