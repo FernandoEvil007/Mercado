@@ -1003,19 +1003,9 @@ select:focus {
   text-align: right;
 }
 
-.inventory-editor select {
-  min-height: 40px;
-  padding: 0 10px;
-  border-radius: 10px;
-}
-
-.inventory-delete {
-  justify-self: end;
-}
-
 @media (min-width: 520px) {
   .inventory-row {
-    grid-template-columns: minmax(0, 1fr) minmax(96px, 0.45fr) minmax(96px, 0.45fr) minmax(122px, 0.6fr) 48px;
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 0.5fr);
   }
 
   .inventory-product-info {

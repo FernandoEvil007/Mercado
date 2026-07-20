@@ -1284,7 +1284,7 @@ function App() {
                           <div className="inventory-row" key={product.id}>
                             <div className="inventory-product-info">
                               <strong>{product.name}</strong>
-                              <span>{[product.brand, getPresentationLabel(product)].filter(Boolean).join(" - ")}</span>
+                              {product.brand ? <span>{product.brand}</span> : null}
                             </div>
                             <label className="inventory-editor">
                               Existencia
@@ -1303,49 +1303,6 @@ function App() {
                                 aria-label={`Cantidad en inventario de ${product.name}`}
                               />
                             </label>
-                            <label className="inventory-editor">
-                              Cantidad
-                              <input
-                                value={presentationQuantityDrafts[product.id] ?? product.presentationQuantity ?? 1}
-                                onChange={(event) => updatePresentationQuantityDraft(product.id, event.target.value)}
-                                onBlur={() =>
-                                  updateProductPresentation(product, {
-                                    presentationQuantity: presentationQuantityDrafts[product.id] ?? product.presentationQuantity ?? 1,
-                                  })
-                                }
-                                onKeyDown={(event) => {
-                                  if (event.key === "Enter") {
-                                    event.currentTarget.blur();
-                                  }
-                                }}
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                aria-label={`Cantidad de presentacion de ${product.name}`}
-                              />
-                            </label>
-                            <label className="inventory-editor">
-                              Unidad
-                              <select
-                                value={product.unit}
-                                onChange={(event) => updateProductPresentation(product, { unit: event.target.value })}
-                                aria-label={`Presentacion de ${product.name}`}
-                              >
-                                {unitOptions.map((unit) => (
-                                  <option key={unit} value={unit}>
-                                    {unit}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <button
-                              className="icon-button inventory-delete"
-                              type="button"
-                              onClick={() => deleteProduct(product)}
-                              aria-label={`Eliminar ${product.name}`}
-                            >
-                              <Trash2 size={18} aria-hidden="true" />
-                            </button>
                           </div>
                         ))}
                       </div>
