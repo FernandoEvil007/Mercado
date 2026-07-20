@@ -377,19 +377,47 @@ app.patch("/api/products/:productId", async (request, response) => {
   const hasPrice = request.body.price !== undefined;
   const hasUnit = request.body.unit !== undefined;
   const hasPresentationQuantity = request.body.presentationQuantity !== undefined;
+  const hasCategory = request.body.categoryId !== undefined;
   const price = Number(request.body.price);
   const unit = hasUnit ? await ensureUnit(request.body.unit) : "unidad";
   const presentationQuantity = normalizePresentationQuantity(request.body.presentationQuantity);
+  const categoryId = Number(request.body.categoryId);
 
-  if (!productId || (!hasPrice && !hasUnit && !hasPresentationQuantity) || (hasPrice && (Number.isNaN(price) || price < 0))) {
+  if (
+    !productId ||
+    (!hasPrice && !hasUnit && !hasPresentationQuantity && !hasCategory) ||
+    (hasPrice && (Number.isNaN(price) || price < 0)) ||
+    (hasCategory && !categoryId)
+  ) {
     response.status(400).json({ error: "Valid product update is required." });
     return;
   }
 
-  const product = await db.get("SELECT id, price FROM products WHERE id = ?", productId);
+  const product = await db.get("SELECT id, name, price, category_id AS categoryId FROM products WHERE id = ?", productId);
   if (!product) {
     response.status(404).json({ error: "Product not found." });
     return;
+  }
+
+  if (hasCategory) {
+    const category = await db.get("SELECT id FROM categories WHERE id = ?", categoryId);
+    if (!category) {
+      response.status(404).json({ error: "Category not found." });
+      return;
+    }
+
+    const duplicate = await db.get(
+      "SELECT id FROM products WHERE category_id = ? AND name = ? AND id <> ?",
+      categoryId,
+      product.name,
+      productId,
+    );
+    if (duplicate) {
+      response.status(409).json({ error: "Product already exists in target category." });
+      return;
+    }
+
+    await db.run("UPDATE products SET category_id = ? WHERE id = ?", categoryId, productId);
   }
 
   if (hasPrice) {

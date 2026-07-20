@@ -459,6 +459,41 @@ function App() {
     setToast(`Presentacion de ${product.name} actualizada`);
   }
 
+  async function updateProductCategory(product, categoryId) {
+    const nextCategoryId = Number(categoryId);
+    const nextCategory = categories.find((category) => category.id === nextCategoryId);
+    if (!nextCategory || nextCategoryId === product.categoryId) {
+      return;
+    }
+
+    const data = await api(`/products/${product.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ categoryId: nextCategoryId }),
+    });
+    setProducts(data.products);
+    setInventory(data.inventory || inventory);
+    setItems((current) =>
+      current.map((item) =>
+        item.productId === product.id
+          ? { ...item, category: nextCategory.name }
+          : item,
+      ),
+    );
+    setPriceHistory((current) =>
+      current.map((entry) =>
+        entry.productId === product.id
+          ? { ...entry, category: nextCategory.name }
+          : entry,
+      ),
+    );
+    setExpandedCategories((current) => ({
+      ...current,
+      [product.categoryId]: true,
+      [nextCategoryId]: true,
+    }));
+    setToast(`${product.name} movido a ${nextCategory.name}`);
+  }
+
   function toggleCategory(categoryId) {
     setExpandedCategories((current) => ({
       ...current,
@@ -740,6 +775,20 @@ function App() {
                                           {unitOptions.map((unit) => (
                                             <option key={unit} value={unit}>
                                               {unit}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                      <label className="price-editor">
+                                        Mover a
+                                        <select
+                                          value={product.categoryId}
+                                          onChange={(event) => updateProductCategory(product, event.target.value)}
+                                          aria-label={`Mover ${product.name} a otra categoria`}
+                                        >
+                                          {categories.map((category) => (
+                                            <option key={category.id} value={category.id}>
+                                              {category.name}
                                             </option>
                                           ))}
                                         </select>
