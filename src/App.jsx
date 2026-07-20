@@ -191,6 +191,25 @@ function App() {
     [products, inventoryByProduct],
   );
   const groupedInventory = useMemo(() => groupByCategory(inventoryProducts), [inventoryProducts]);
+  const groupedListItems = useMemo(() => {
+    const sortedItems = [...items].sort((first, second) => {
+      const byCategory = first.category.localeCompare(second.category, "es", { sensitivity: "base" });
+      if (byCategory !== 0) {
+        return byCategory;
+      }
+
+      return first.name.localeCompare(second.name, "es", { sensitivity: "base" });
+    });
+
+    return sortedItems.reduce((groups, item) => {
+      if (!groups[item.category]) {
+        groups[item.category] = [];
+      }
+
+      groups[item.category].push(item);
+      return groups;
+    }, {});
+  }, [items]);
   const filteredPriceHistory = useMemo(() => {
     const text = historyQuery.trim().toLowerCase();
     const entries = text
@@ -1191,42 +1210,50 @@ function App() {
                 </div>
               ) : (
                 <div className="product-list">
-                  {items.map((item) => (
-                    <article className={item.checked ? "product-row checked" : "product-row"} key={item.id}>
-                      <button
-                        className={item.checked ? "check-button checked" : "check-button"}
-                        type="button"
-                        onClick={() => updateItem(item.id, { checked: !item.checked })}
-                        aria-label={item.checked ? `${item.name} comprado` : `Marcar ${item.name} como comprado`}
-                      >
-                        <Check size={16} aria-hidden="true" />
-                      </button>
-                      <div className="product-main">
-                        <strong>{item.name}</strong>
-                        <span>{item.checked ? "Comprado" : [item.brand, item.category].filter(Boolean).join(" - ")}</span>
+                  {Object.entries(groupedListItems).map(([categoryName, categoryItems]) => (
+                    <section className="list-category" key={categoryName}>
+                      <div className="list-category-head">
+                        <strong>{categoryName}</strong>
+                        <span>{categoryItems.filter((item) => item.checked).length} de {categoryItems.length}</span>
                       </div>
-                      <input
-                        className="quantity-input"
-                        value={item.quantity}
-                        onChange={(event) => updateItem(item.id, { quantity: event.target.value })}
-                        type="number"
-                        min="1"
-                        aria-label={`Cantidad de ${item.name}`}
-                      />
-                      <div className="product-numbers">
-                        <span>{currency.format(item.price)} / {getPresentationLabel(item)}</span>
-                        <span>{getBaseCost(item)}</span>
-                        <strong>{currency.format(item.price * item.quantity)}</strong>
-                      </div>
-                      <button
-                        className="icon-button"
-                        type="button"
-                        onClick={() => removeItem(item.id)}
-                        aria-label={`Eliminar ${item.name}`}
-                      >
-                        <Trash2 size={18} aria-hidden="true" />
-                      </button>
-                    </article>
+                      {categoryItems.map((item) => (
+                        <article className={item.checked ? "product-row checked" : "product-row"} key={item.id}>
+                          <button
+                            className={item.checked ? "check-button checked" : "check-button"}
+                            type="button"
+                            onClick={() => updateItem(item.id, { checked: !item.checked })}
+                            aria-label={item.checked ? `${item.name} comprado` : `Marcar ${item.name} como comprado`}
+                          >
+                            <Check size={16} aria-hidden="true" />
+                          </button>
+                          <div className="product-main">
+                            <strong>{item.name}</strong>
+                            <span>{item.checked ? "Comprado" : [item.brand, item.category].filter(Boolean).join(" - ")}</span>
+                          </div>
+                          <input
+                            className="quantity-input"
+                            value={item.quantity}
+                            onChange={(event) => updateItem(item.id, { quantity: event.target.value })}
+                            type="number"
+                            min="1"
+                            aria-label={`Cantidad de ${item.name}`}
+                          />
+                          <div className="product-numbers">
+                            <span>{currency.format(item.price)} / {getPresentationLabel(item)}</span>
+                            <span>{getBaseCost(item)}</span>
+                            <strong>{currency.format(item.price * item.quantity)}</strong>
+                          </div>
+                          <button
+                            className="icon-button"
+                            type="button"
+                            onClick={() => removeItem(item.id)}
+                            aria-label={`Eliminar ${item.name}`}
+                          >
+                            <Trash2 size={18} aria-hidden="true" />
+                          </button>
+                        </article>
+                      ))}
+                    </section>
                   ))}
                 </div>
               )}

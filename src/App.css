@@ -504,6 +504,27 @@ select:focus {
   margin-top: 12px;
 }
 
+.list-category {
+  display: grid;
+  gap: 8px;
+}
+
+.list-category-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.list-category-head strong {
+  color: var(--accent);
+  font-size: 0.86rem;
+}
+
 .category-card {
   min-width: 0;
   border: 1px solid var(--border-soft);
