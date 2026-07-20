@@ -1282,16 +1282,9 @@ select:focus {
   font-weight: 900;
 }
 
-.catalog-switcher select,
-.catalog-create-form input {
+.catalog-switcher select {
   min-height: 42px;
   border-radius: 12px;
-}
-
-.catalog-create-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
-  gap: 8px;
 }
 
 .search-box {

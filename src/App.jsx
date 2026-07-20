@@ -221,6 +221,7 @@ function App() {
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [editingProductId, setEditingProductId] = useState(null);
   const [deleteCategoryId, setDeleteCategoryId] = useState(null);
+  const [showCatalogCreator, setShowCatalogCreator] = useState(false);
   const [showCategoryCreator, setShowCategoryCreator] = useState(false);
   const [showUnitManager, setShowUnitManager] = useState(false);
   const [categoryName, setCategoryName] = useState("");
@@ -547,6 +548,7 @@ function App() {
     applyBootstrapData(data);
     setQuery("");
     setCatalogName("");
+    setShowCatalogCreator(false);
     setEditingProductId(null);
     setToast(`${name} creado`);
   }
@@ -1535,17 +1537,6 @@ function App() {
                       ))}
                     </select>
                   </label>
-                  <form className="catalog-create-form" onSubmit={createCatalog}>
-                    <input
-                      value={catalogName}
-                      onChange={(event) => setCatalogName(event.target.value)}
-                      placeholder="Nuevo catalogo"
-                      aria-label="Nombre del nuevo catalogo"
-                    />
-                    <button className="primary-button square" type="submit" aria-label="Crear catalogo">
-                      <Plus size={18} aria-hidden="true" />
-                    </button>
-                  </form>
                 </section>
                 <div className="search-box">
                   <Search size={18} aria-hidden="true" />
@@ -1869,6 +1860,40 @@ function App() {
                 <Settings size={20} aria-hidden="true" />
                 <h3>Configuracion</h3>
               </div>
+
+              <section className="dropdown-panel">
+                <button
+                  className="dropdown-trigger"
+                  type="button"
+                  onClick={() => setShowCatalogCreator((current) => !current)}
+                  aria-expanded={showCatalogCreator}
+                >
+                  <span>
+                    <Layers3 size={18} aria-hidden="true" />
+                    Nuevo catalogo
+                  </span>
+                  <ChevronDown className={showCatalogCreator ? "chevron open" : "chevron"} size={19} aria-hidden="true" />
+                </button>
+                {showCatalogCreator ? (
+                  <form className="mini-form catalog-create" onSubmit={createCatalog}>
+                    <label>
+                      Nombre
+                      <div className="inline-form">
+                        <input
+                          value={catalogName}
+                          onChange={(event) => setCatalogName(event.target.value)}
+                          placeholder="Ej: Catalogo Exito"
+                          aria-label="Nombre del nuevo catalogo"
+                        />
+                        <button className="primary-button square" type="submit" aria-label="Crear catalogo">
+                          <Plus size={18} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </label>
+                    <span className="quiet-text">Se copiaran los productos de {activeCatalog?.name || "tu catalogo actual"} con precios en cero.</span>
+                  </form>
+                ) : null}
+              </section>
 
               <section className="dropdown-panel">
                 <button
