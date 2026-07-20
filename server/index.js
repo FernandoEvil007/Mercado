@@ -171,6 +171,11 @@ await getDb().exec(`
     checked INTEGER NOT NULL DEFAULT 1,
     FOREIGN KEY (record_id) REFERENCES purchase_records(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
 
 const productColumns = await getDb().all("PRAGMA table_info(products)");
@@ -206,17 +211,29 @@ if (!listColumns.some((column) => column.name === "completed_total")) {
   await getDb().run("ALTER TABLE shopping_lists ADD COLUMN completed_total REAL");
 }
 
-for (const [categoryName, productName, price] of seedProducts) {
-  const category = await getDb().get("SELECT id FROM categories WHERE name = ?", categoryName);
-  const categoryId =
-    category?.id ??
-    (await getDb().run("INSERT INTO categories (name) VALUES (?)", categoryName)).lastID;
+const productCount = await getDb().get("SELECT COUNT(*) AS total FROM products");
+const catalogSeeded = await getDb().get("SELECT value FROM app_settings WHERE key = ?", "catalog_seeded");
+if (!catalogSeeded && productCount.total === 0) {
+  for (const [categoryName, productName, price] of seedProducts) {
+    const category = await getDb().get("SELECT id FROM categories WHERE name = ?", categoryName);
+    const categoryId =
+      category?.id ??
+      (await getDb().run("INSERT INTO categories (name) VALUES (?)", categoryName)).lastID;
 
+    await getDb().run(
+      "INSERT OR IGNORE INTO products (category_id, name, price) VALUES (?, ?, ?)",
+      categoryId,
+      productName,
+      price,
+    );
+  }
+}
+
+if (!catalogSeeded) {
   await getDb().run(
-    "INSERT OR IGNORE INTO products (category_id, name, price) VALUES (?, ?, ?)",
-    categoryId,
-    productName,
-    price,
+    "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+    "catalog_seeded",
+    "1",
   );
 }
 
