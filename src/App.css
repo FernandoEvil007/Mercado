@@ -1404,7 +1404,7 @@ select:focus {
 
 .product-row {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 72px 48px;
+  grid-template-columns: 48px minmax(0, 1fr) 72px minmax(112px, 0.8fr) 48px;
   gap: 9px;
   align-items: center;
   min-height: 76px;
@@ -1437,8 +1437,23 @@ select:focus {
   text-align: center;
 }
 
+.list-price-editor {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.list-price-editor input {
+  min-height: 44px;
+  padding: 0 8px;
+  border-radius: 12px;
+  text-align: right;
+}
+
 .product-numbers {
-  grid-column: 2 / 4;
+  grid-column: 2 / 5;
   justify-items: start;
 }
 
@@ -1811,6 +1826,14 @@ select:focus {
 
   .product-row {
     grid-template-columns: 48px minmax(0, 1fr) 62px;
+  }
+
+  .list-price-editor {
+    grid-column: 2 / -1;
+  }
+
+  .product-numbers {
+    grid-column: 2 / -1;
   }
 
   .shopping-item {

@@ -1791,6 +1791,32 @@ function App() {
                             min="1"
                             aria-label={`Cantidad de ${item.name}`}
                           />
+                          <label className="list-price-editor">
+                            Precio hoy
+                            <input
+                              value={itemPriceDrafts[item.id] ?? item.price}
+                              onChange={(event) => updateItemPriceDraft(item.id, event.target.value)}
+                              onBlur={() => {
+                                const draftPrice = itemPriceDrafts[item.id];
+                                if (draftPrice !== undefined && draftPrice !== "") {
+                                  updateItem(item.id, { price: draftPrice });
+                                  updateItemPriceDraft(item.id, undefined);
+                                  return;
+                                }
+
+                                updateItemPriceDraft(item.id, undefined);
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                  event.currentTarget.blur();
+                                }
+                              }}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              aria-label={`Precio de hoy para ${item.name}`}
+                            />
+                          </label>
                           <div className="product-numbers">
                             <span>{currency.format(item.price)} / {getPresentationLabel(item)}</span>
                             <span>{getBaseCost(item)}</span>
