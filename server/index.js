@@ -479,7 +479,7 @@ app.get("/api/export", async (_request, response) => {
   ]);
 
   response.setHeader("Content-Type", "application/json");
-  response.setHeader("Content-Disposition", `attachment; filename="mercardo-respaldo-${new Date().toISOString().slice(0, 10)}.json"`);
+  response.setHeader("Content-Disposition", `attachment; filename="merky-respaldo-${new Date().toISOString().slice(0, 10)}.json"`);
   response.json({
     exportedAt: new Date().toISOString(),
     categories,
@@ -1002,5 +1002,5 @@ app.use((request, response, next) => {
 });
 
 app.listen(port, () => {
-  console.log(`Mercardo API running on http://127.0.0.1:${port}`);
+  console.log(`Merky API running on http://127.0.0.1:${port}`);
 });

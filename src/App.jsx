@@ -854,7 +854,7 @@ function App() {
             </div>
             <div>
               <p>Aplicacion de mercado</p>
-              <h1>Mercardo</h1>
+              <h1>Merky</h1>
             </div>
             <button
               className="theme-button"
