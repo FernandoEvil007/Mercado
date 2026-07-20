@@ -560,6 +560,18 @@ select:focus {
   color: var(--text-strong);
 }
 
+.category-name-trigger {
+  width: fit-content;
+  border-radius: 8px;
+  padding: 2px 4px;
+  margin-left: -4px;
+}
+
+.category-name-trigger:active {
+  background: var(--panel-soft);
+  color: var(--accent);
+}
+
 .category-card-head span {
   display: block;
   margin-top: 3px;

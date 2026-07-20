@@ -117,6 +117,7 @@ function App() {
   const [unitDrafts, setUnitDrafts] = useState({});
   const [expandedCategories, setExpandedCategories] = useState({});
   const [productFormMenus, setProductFormMenus] = useState({});
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [editingProductId, setEditingProductId] = useState(null);
   const [showCategoryCreator, setShowCategoryCreator] = useState(false);
   const [showUnitManager, setShowUnitManager] = useState(false);
@@ -250,6 +251,7 @@ function App() {
     const name = (categoryDrafts[category.id] ?? category.name).trim();
     if (!name || name === category.name) {
       updateCategoryDraft(category.id, undefined);
+      setEditingCategoryId(null);
       return;
     }
 
@@ -267,6 +269,7 @@ function App() {
       ),
     );
     updateCategoryDraft(category.id, undefined);
+    setEditingCategoryId(null);
     setToast(`${category.name} ahora es ${name}`);
   }
 
@@ -782,27 +785,43 @@ function App() {
                         aria-expanded={isExpanded}
                       >
                         <div>
-                          <h4>{category.name}</h4>
+                          <h4
+                            className="category-name-trigger"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              updateCategoryDraft(category.id, category.name);
+                              setEditingCategoryId(category.id);
+                              setExpandedCategories((current) => ({ ...current, [category.id]: true }));
+                            }}
+                          >
+                            {category.name}
+                          </h4>
                           <span>{categoryProducts.length} productos</span>
                         </div>
                         <ChevronDown className={isExpanded ? "chevron open" : "chevron"} size={20} aria-hidden="true" />
                       </button>
                       {isExpanded ? (
                         <>
-                          <label className="category-name-editor">
-                            Categoria
-                            <input
-                              value={categoryDrafts[category.id] ?? category.name}
-                              onChange={(event) => updateCategoryDraft(category.id, event.target.value)}
-                              onBlur={() => saveCategoryName(category)}
-                              onKeyDown={(event) => {
-                                if (event.key === "Enter") {
-                                  event.currentTarget.blur();
-                                }
-                              }}
-                              aria-label={`Cambiar nombre de categoria ${category.name}`}
-                            />
-                          </label>
+                          {editingCategoryId === category.id ? (
+                            <label className="category-name-editor">
+                              Categoria
+                              <input
+                                value={categoryDrafts[category.id] ?? category.name}
+                                onChange={(event) => updateCategoryDraft(category.id, event.target.value)}
+                                onBlur={() => saveCategoryName(category)}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") {
+                                    event.currentTarget.blur();
+                                  }
+                                  if (event.key === "Escape") {
+                                    updateCategoryDraft(category.id, undefined);
+                                    setEditingCategoryId(null);
+                                  }
+                                }}
+                                aria-label={`Cambiar nombre de categoria ${category.name}`}
+                              />
+                            </label>
+                          ) : null}
                           <button
                             className="category-action-trigger"
                             type="button"
