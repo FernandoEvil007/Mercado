@@ -1,0 +1,2552 @@
+{
+  "exportedAt": "2026-07-20T08:14:33.869Z",
+  "source": "server/data/mercardo.sqlite",
+  "tables": {
+    "categories": [
+      {
+        "id": 1,
+        "name": "Despensa"
+      },
+      {
+        "id": 2,
+        "name": "Frutas y verduras"
+      },
+      {
+        "id": 3,
+        "name": "Carnes/producto animal"
+      },
+      {
+        "id": 4,
+        "name": "Lacteos"
+      },
+      {
+        "id": 5,
+        "name": "Aseo"
+      },
+      {
+        "id": 6,
+        "name": "Otros"
+      },
+      {
+        "id": 7,
+        "name": "Sophia"
+      },
+      {
+        "id": 8,
+        "name": "Carnes"
+      }
+    ],
+    "products": [
+      {
+        "id": 1,
+        "category_id": 1,
+        "name": "Arroz",
+        "price": 12900,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "kilo",
+        "presentation_quantity": 2.5,
+        "brand": "Flor Huila"
+      },
+      {
+        "id": 2,
+        "category_id": 1,
+        "name": "Frijol",
+        "price": 7000,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "kilo",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 3,
+        "category_id": 1,
+        "name": "Aceite",
+        "price": 14500,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 4,
+        "category_id": 1,
+        "name": "Pasta Fetuchinni",
+        "price": 7700,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": "Monticello"
+      },
+      {
+        "id": 5,
+        "category_id": 2,
+        "name": "Tomate",
+        "price": 28200,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "kilo",
+        "presentation_quantity": 6.36,
+        "brand": ""
+      },
+      {
+        "id": 6,
+        "category_id": 2,
+        "name": "Cebolla Larga",
+        "price": 9016,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "kilo",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 7,
+        "category_id": 2,
+        "name": "Banano",
+        "price": 4200,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 8,
+        "category_id": 2,
+        "name": "Papa",
+        "price": 24000,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "kilo",
+        "presentation_quantity": 7,
+        "brand": ""
+      },
+      {
+        "id": 10,
+        "category_id": 3,
+        "name": "Carne molida",
+        "price": 27000,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "kilo",
+        "presentation_quantity": 1.57,
+        "brand": ""
+      },
+      {
+        "id": 12,
+        "category_id": 4,
+        "name": "Leche",
+        "price": 52640,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "litros",
+        "presentation_quantity": 12,
+        "brand": "Colanta"
+      },
+      {
+        "id": 13,
+        "category_id": 4,
+        "name": "Queso Cuajada",
+        "price": 24600,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "unidad",
+        "presentation_quantity": 2,
+        "brand": "Monteloro"
+      },
+      {
+        "id": 14,
+        "category_id": 4,
+        "name": "Yogurt",
+        "price": 7200,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 15,
+        "category_id": 5,
+        "name": "Jabon manos",
+        "price": 4600,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 16,
+        "category_id": 5,
+        "name": "Papel higienico",
+        "price": 39780,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "unidad",
+        "presentation_quantity": 30.01,
+        "brand": "Rosal"
+      },
+      {
+        "id": 18,
+        "category_id": 6,
+        "name": "Cafe",
+        "price": 18500,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 19,
+        "category_id": 6,
+        "name": "Pan Tajado Artesano",
+        "price": 7600,
+        "created_at": "2026-07-20 03:47:23",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": "Bimbo"
+      },
+      {
+        "id": 287,
+        "category_id": 3,
+        "name": "Pernil de pollo",
+        "price": 30643,
+        "created_at": "2026-07-20 05:52:04",
+        "unit": "kilo",
+        "presentation_quantity": 2.3,
+        "brand": ""
+      },
+      {
+        "id": 288,
+        "category_id": 3,
+        "name": "Pechuga de pollo",
+        "price": 71094,
+        "created_at": "2026-07-20 05:52:18",
+        "unit": "kilo",
+        "presentation_quantity": 4.62,
+        "brand": ""
+      },
+      {
+        "id": 308,
+        "category_id": 5,
+        "name": "Jabon Rey",
+        "price": 7400,
+        "created_at": "2026-07-20 05:59:02",
+        "unit": "unidad",
+        "presentation_quantity": 3,
+        "brand": ""
+      },
+      {
+        "id": 319,
+        "category_id": 3,
+        "name": "Huevos",
+        "price": 52000,
+        "created_at": "2026-07-20 05:59:24",
+        "unit": "unidad",
+        "presentation_quantity": 90,
+        "brand": "Alkosto"
+      },
+      {
+        "id": 348,
+        "category_id": 3,
+        "name": "Cadera de Res",
+        "price": 42000,
+        "created_at": "2026-07-20 06:03:19",
+        "unit": "kilo",
+        "presentation_quantity": 2,
+        "brand": ""
+      },
+      {
+        "id": 349,
+        "category_id": 3,
+        "name": "Costilla de Cerdo",
+        "price": 29600,
+        "created_at": "2026-07-20 06:08:56",
+        "unit": "kilo",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 350,
+        "category_id": 6,
+        "name": "Guantes para lavar",
+        "price": 5900,
+        "created_at": "2026-07-20 06:09:56",
+        "unit": "unidad",
+        "presentation_quantity": 2,
+        "brand": ""
+      },
+      {
+        "id": 351,
+        "category_id": 6,
+        "name": "Arena para Gato",
+        "price": 19900,
+        "created_at": "2026-07-20 06:11:29",
+        "unit": "kilo",
+        "presentation_quantity": 4.5,
+        "brand": ""
+      },
+      {
+        "id": 353,
+        "category_id": 4,
+        "name": "Mantequilla",
+        "price": 11500,
+        "created_at": "2026-07-20 06:13:44",
+        "unit": "gramos",
+        "presentation_quantity": 200,
+        "brand": ""
+      },
+      {
+        "id": 354,
+        "category_id": 4,
+        "name": "Sour Cream",
+        "price": 10900,
+        "created_at": "2026-07-20 06:15:51",
+        "unit": "gramos",
+        "presentation_quantity": 400,
+        "brand": ""
+      },
+      {
+        "id": 355,
+        "category_id": 1,
+        "name": "Salsa de tomate",
+        "price": 9000,
+        "created_at": "2026-07-20 06:16:48",
+        "unit": "gramos",
+        "presentation_quantity": 1000,
+        "brand": ""
+      },
+      {
+        "id": 372,
+        "category_id": 5,
+        "name": "Detergente liquido",
+        "price": 43900,
+        "created_at": "2026-07-20 06:18:03",
+        "unit": "litro",
+        "presentation_quantity": 10,
+        "brand": "Alkosto"
+      },
+      {
+        "id": 394,
+        "category_id": 7,
+        "name": "Nachos",
+        "price": 7600,
+        "created_at": "2026-07-20 06:22:14",
+        "unit": "gramos",
+        "presentation_quantity": 190,
+        "brand": "Fiestos"
+      },
+      {
+        "id": 395,
+        "category_id": 7,
+        "name": "Galletas",
+        "price": 23000,
+        "created_at": "2026-07-20 06:23:51",
+        "unit": "unidad",
+        "presentation_quantity": 2,
+        "brand": "Chokis"
+      },
+      {
+        "id": 396,
+        "category_id": 1,
+        "name": "Caldo desmenuzado",
+        "price": 5900,
+        "created_at": "2026-07-20 06:24:33",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": "Maggy"
+      },
+      {
+        "id": 397,
+        "category_id": 7,
+        "name": "Galleta",
+        "price": 14900,
+        "created_at": "2026-07-20 06:25:04",
+        "unit": "unidad",
+        "presentation_quantity": 8,
+        "brand": "Cocossete"
+      },
+      {
+        "id": 398,
+        "category_id": 5,
+        "name": "Esponja",
+        "price": 15900,
+        "created_at": "2026-07-20 06:25:54",
+        "unit": "unidad",
+        "presentation_quantity": 6,
+        "brand": "Scotch"
+      },
+      {
+        "id": 399,
+        "category_id": 1,
+        "name": "Pastas/Sato",
+        "price": 11200,
+        "created_at": "2026-07-20 06:27:19",
+        "unit": "unidad",
+        "presentation_quantity": 5,
+        "brand": "La Muñeca"
+      },
+      {
+        "id": 400,
+        "category_id": 3,
+        "name": "Camaron",
+        "price": 32000,
+        "created_at": "2026-07-20 06:31:25",
+        "unit": "gramos",
+        "presentation_quantity": 420,
+        "brand": "Ancla y viento"
+      },
+      {
+        "id": 401,
+        "category_id": 3,
+        "name": "Salchicha llanera",
+        "price": 18300,
+        "created_at": "2026-07-20 06:32:55",
+        "unit": "gramos",
+        "presentation_quantity": 500,
+        "brand": "Rica"
+      },
+      {
+        "id": 402,
+        "category_id": 3,
+        "name": "Muslos de pollo",
+        "price": 31300,
+        "created_at": "2026-07-20 06:34:55",
+        "unit": "kilo",
+        "presentation_quantity": 1.66,
+        "brand": ""
+      },
+      {
+        "id": 422,
+        "category_id": 3,
+        "name": "Tocino barriguero",
+        "price": 23188,
+        "created_at": "2026-07-20 06:39:57",
+        "unit": "gramos",
+        "presentation_quantity": 860,
+        "brand": ""
+      },
+      {
+        "id": 423,
+        "category_id": 3,
+        "name": "Jamon",
+        "price": 8300,
+        "created_at": "2026-07-20 06:41:36",
+        "unit": "gramos",
+        "presentation_quantity": 450,
+        "brand": "Rica"
+      },
+      {
+        "id": 424,
+        "category_id": 4,
+        "name": "Queso Mozarrella tajado",
+        "price": 23200,
+        "created_at": "2026-07-20 06:42:25",
+        "unit": "gramos",
+        "presentation_quantity": 750,
+        "brand": "Alkosto"
+      },
+      {
+        "id": 425,
+        "category_id": 4,
+        "name": "Queso  Casero",
+        "price": 10800,
+        "created_at": "2026-07-20 06:44:18",
+        "unit": "gramos",
+        "presentation_quantity": 350,
+        "brand": "Colanta"
+      },
+      {
+        "id": 427,
+        "category_id": 5,
+        "name": "Desodorante",
+        "price": 25000,
+        "created_at": "2026-07-20 06:46:00",
+        "unit": "unidad",
+        "presentation_quantity": 2,
+        "brand": "Rexona Clinica"
+      },
+      {
+        "id": 428,
+        "category_id": 4,
+        "name": "Kumis",
+        "price": 15000,
+        "created_at": "2026-07-20 06:46:40",
+        "unit": "litro",
+        "presentation_quantity": 2,
+        "brand": "Alpina"
+      },
+      {
+        "id": 429,
+        "category_id": 4,
+        "name": "Bon Your",
+        "price": 27000,
+        "created_at": "2026-07-20 06:49:18",
+        "unit": "unidad",
+        "presentation_quantity": 8,
+        "brand": "Alpina"
+      },
+      {
+        "id": 430,
+        "category_id": 5,
+        "name": "Bolsa de aseo",
+        "price": 19300,
+        "created_at": "2026-07-20 06:50:11",
+        "unit": "unidad",
+        "presentation_quantity": 30,
+        "brand": ""
+      },
+      {
+        "id": 431,
+        "category_id": 2,
+        "name": "Arverja",
+        "price": 22900,
+        "created_at": "2026-07-20 06:50:55",
+        "unit": "kilo",
+        "presentation_quantity": 1,
+        "brand": "McCain"
+      },
+      {
+        "id": 432,
+        "category_id": 2,
+        "name": "Cebolla Cabezona",
+        "price": 18870,
+        "created_at": "2026-07-20 06:51:36",
+        "unit": "kilo",
+        "presentation_quantity": 2.55,
+        "brand": ""
+      },
+      {
+        "id": 433,
+        "category_id": 2,
+        "name": "Papa amarilla",
+        "price": 8900,
+        "created_at": "2026-07-20 06:52:17",
+        "unit": "kilo",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 434,
+        "category_id": 2,
+        "name": "Mazorca dulce",
+        "price": 8168,
+        "created_at": "2026-07-20 06:53:10",
+        "unit": "unidad",
+        "presentation_quantity": 3,
+        "brand": ""
+      },
+      {
+        "id": 435,
+        "category_id": 2,
+        "name": "Cilantro",
+        "price": 2665,
+        "created_at": "2026-07-20 06:53:44",
+        "unit": "gramos",
+        "presentation_quantity": 200,
+        "brand": ""
+      },
+      {
+        "id": 436,
+        "category_id": 2,
+        "name": "Naranja dulce",
+        "price": 19800,
+        "created_at": "2026-07-20 06:54:14",
+        "unit": "kilo",
+        "presentation_quantity": 10,
+        "brand": ""
+      },
+      {
+        "id": 437,
+        "category_id": 6,
+        "name": "Gaseosa",
+        "price": 24300,
+        "created_at": "2026-07-20 06:55:56",
+        "unit": "unidad",
+        "presentation_quantity": 4,
+        "brand": "Coca cola zero"
+      },
+      {
+        "id": 438,
+        "category_id": 5,
+        "name": "Suavizante",
+        "price": 28900,
+        "created_at": "2026-07-20 06:56:26",
+        "unit": "litro",
+        "presentation_quantity": 10,
+        "brand": "Alkosto"
+      },
+      {
+        "id": 439,
+        "category_id": 5,
+        "name": "Blanqueador",
+        "price": 10900,
+        "created_at": "2026-07-20 06:59:15",
+        "unit": "litro",
+        "presentation_quantity": 3,
+        "brand": "Blancox"
+      },
+      {
+        "id": 440,
+        "category_id": 2,
+        "name": "Ajo",
+        "price": 6900,
+        "created_at": "2026-07-20 06:59:50",
+        "unit": "unidad",
+        "presentation_quantity": 9,
+        "brand": ""
+      },
+      {
+        "id": 441,
+        "category_id": 2,
+        "name": "Pimenton",
+        "price": 1700,
+        "created_at": "2026-07-20 07:00:37",
+        "unit": "gramos",
+        "presentation_quantity": 420,
+        "brand": ""
+      },
+      {
+        "id": 442,
+        "category_id": 2,
+        "name": "Manzana Verde",
+        "price": 11200,
+        "created_at": "2026-07-20 07:01:05",
+        "unit": "unidad",
+        "presentation_quantity": 6,
+        "brand": ""
+      },
+      {
+        "id": 443,
+        "category_id": 2,
+        "name": "Habichuela",
+        "price": 8500,
+        "created_at": "2026-07-20 07:01:42",
+        "unit": "kilo",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 444,
+        "category_id": 2,
+        "name": "Platano Verde",
+        "price": 14000,
+        "created_at": "2026-07-20 07:02:24",
+        "unit": "kilo",
+        "presentation_quantity": 4.22,
+        "brand": ""
+      },
+      {
+        "id": 445,
+        "category_id": 6,
+        "name": "Malta Natumalta",
+        "price": 6700,
+        "created_at": "2026-07-20 07:03:11",
+        "unit": "unidad",
+        "presentation_quantity": 6,
+        "brand": ""
+      },
+      {
+        "id": 446,
+        "category_id": 6,
+        "name": "Te",
+        "price": 15500,
+        "created_at": "2026-07-20 07:03:42",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": "Sun Tea"
+      },
+      {
+        "id": 447,
+        "category_id": 2,
+        "name": "Uvas",
+        "price": 9900,
+        "created_at": "2026-07-20 07:04:13",
+        "unit": "gramos",
+        "presentation_quantity": 500,
+        "brand": "Pasas"
+      },
+      {
+        "id": 448,
+        "category_id": 7,
+        "name": "Jugo Hit",
+        "price": 14900,
+        "created_at": "2026-07-20 07:06:12",
+        "unit": "unidad",
+        "presentation_quantity": 12,
+        "brand": ""
+      },
+      {
+        "id": 449,
+        "category_id": 1,
+        "name": "Azucar",
+        "price": 9200,
+        "created_at": "2026-07-20 07:06:56",
+        "unit": "kilo",
+        "presentation_quantity": 2.5,
+        "brand": "Incauca"
+      },
+      {
+        "id": 450,
+        "category_id": 2,
+        "name": "Zanahoria",
+        "price": 7300,
+        "created_at": "2026-07-20 07:07:41",
+        "unit": "kilo",
+        "presentation_quantity": 2,
+        "brand": "Buena Santerra"
+      },
+      {
+        "id": 451,
+        "category_id": 2,
+        "name": "Champiñon",
+        "price": 9800,
+        "created_at": "2026-07-20 07:09:49",
+        "unit": "gramos",
+        "presentation_quantity": 250,
+        "brand": "BdJ"
+      },
+      {
+        "id": 452,
+        "category_id": 4,
+        "name": "Crema de Leche",
+        "price": 12000,
+        "created_at": "2026-07-20 07:10:35",
+        "unit": "unidad",
+        "presentation_quantity": 3,
+        "brand": "Alqueria"
+      },
+      {
+        "id": 453,
+        "category_id": 1,
+        "name": "Mayonesa",
+        "price": 14000,
+        "created_at": "2026-07-20 07:12:05",
+        "unit": "kilo",
+        "presentation_quantity": 1,
+        "brand": "Constancia"
+      },
+      {
+        "id": 454,
+        "category_id": 3,
+        "name": "Lomo Cerdo",
+        "price": 32000,
+        "created_at": "2026-07-20 07:12:39",
+        "unit": "kilo",
+        "presentation_quantity": 1.64,
+        "brand": ""
+      },
+      {
+        "id": 455,
+        "category_id": 1,
+        "name": "Salsa de Piña",
+        "price": 7900,
+        "created_at": "2026-07-20 07:13:35",
+        "unit": "gramos",
+        "presentation_quantity": 400,
+        "brand": "Constancia"
+      },
+      {
+        "id": 456,
+        "category_id": 7,
+        "name": "Tortillas",
+        "price": 15500,
+        "created_at": "2026-07-20 07:14:20",
+        "unit": "unidad",
+        "presentation_quantity": 20,
+        "brand": "Bimbo"
+      },
+      {
+        "id": 457,
+        "category_id": 1,
+        "name": "Harina Pan",
+        "price": 13800,
+        "created_at": "2026-07-20 07:16:19",
+        "unit": "kilo",
+        "presentation_quantity": 4,
+        "brand": ""
+      },
+      {
+        "id": 458,
+        "category_id": 7,
+        "name": "Malta",
+        "price": 3000,
+        "created_at": "2026-07-20 07:16:45",
+        "unit": "litro",
+        "presentation_quantity": 1,
+        "brand": "Natumalta"
+      },
+      {
+        "id": 459,
+        "category_id": 1,
+        "name": "Sal",
+        "price": 7900,
+        "created_at": "2026-07-20 07:17:38",
+        "unit": "kilo",
+        "presentation_quantity": 2,
+        "brand": "Refisal"
+      },
+      {
+        "id": 460,
+        "category_id": 2,
+        "name": "Brocoli",
+        "price": 5210,
+        "created_at": "2026-07-20 07:18:04",
+        "unit": "gramos",
+        "presentation_quantity": 760,
+        "brand": ""
+      },
+      {
+        "id": 461,
+        "category_id": 3,
+        "name": "Chuleta de Cerdo",
+        "price": 16580,
+        "created_at": "2026-07-20 07:18:43",
+        "unit": "kilo",
+        "presentation_quantity": 0.76,
+        "brand": "Alkosto"
+      },
+      {
+        "id": 462,
+        "category_id": 2,
+        "name": "Tomate Cherry",
+        "price": 10500,
+        "created_at": "2026-07-20 07:20:37",
+        "unit": "gramos",
+        "presentation_quantity": 500,
+        "brand": ""
+      },
+      {
+        "id": 463,
+        "category_id": 5,
+        "name": "Papel Cocina 660 H",
+        "price": 16500,
+        "created_at": "2026-07-20 07:21:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": "Alkosto"
+      },
+      {
+        "id": 467,
+        "category_id": 1,
+        "name": "Pasta",
+        "price": 3800,
+        "created_at": "2026-07-20 07:40:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 469,
+        "category_id": 2,
+        "name": "Cebolla",
+        "price": 2800,
+        "created_at": "2026-07-20 07:40:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 472,
+        "category_id": 8,
+        "name": "Pollo",
+        "price": 14500,
+        "created_at": "2026-07-20 07:40:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 473,
+        "category_id": 8,
+        "name": "Carne molida",
+        "price": 18500,
+        "created_at": "2026-07-20 07:40:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 474,
+        "category_id": 8,
+        "name": "Huevos",
+        "price": 16000,
+        "created_at": "2026-07-20 07:40:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 476,
+        "category_id": 4,
+        "name": "Queso",
+        "price": 12000,
+        "created_at": "2026-07-20 07:40:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 478,
+        "category_id": 5,
+        "name": "Jabon",
+        "price": 4600,
+        "created_at": "2026-07-20 07:40:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 480,
+        "category_id": 5,
+        "name": "Detergente",
+        "price": 23000,
+        "created_at": "2026-07-20 07:40:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      },
+      {
+        "id": 482,
+        "category_id": 6,
+        "name": "Pan",
+        "price": 5000,
+        "created_at": "2026-07-20 07:40:13",
+        "unit": "unidad",
+        "presentation_quantity": 1,
+        "brand": ""
+      }
+    ],
+    "product_brands": [
+      {
+        "id": 2,
+        "product_id": 394,
+        "name": "Fiestos",
+        "created_at": "2026-07-20 06:22:14",
+        "price": null,
+        "updated_at": "2026-07-20 06:22:14"
+      },
+      {
+        "id": 3,
+        "product_id": 395,
+        "name": "Chokis",
+        "created_at": "2026-07-20 06:23:51",
+        "price": null,
+        "updated_at": "2026-07-20 06:23:51"
+      },
+      {
+        "id": 4,
+        "product_id": 396,
+        "name": "Maggy",
+        "created_at": "2026-07-20 06:24:33",
+        "price": null,
+        "updated_at": "2026-07-20 06:24:33"
+      },
+      {
+        "id": 5,
+        "product_id": 397,
+        "name": "Cocossete",
+        "created_at": "2026-07-20 06:25:04",
+        "price": null,
+        "updated_at": "2026-07-20 06:25:04"
+      },
+      {
+        "id": 6,
+        "product_id": 398,
+        "name": "Scotch",
+        "created_at": "2026-07-20 06:25:54",
+        "price": null,
+        "updated_at": "2026-07-20 06:25:54"
+      },
+      {
+        "id": 7,
+        "product_id": 4,
+        "name": "Monticello",
+        "created_at": "2026-07-20 06:26:22",
+        "price": null,
+        "updated_at": "2026-07-20 06:26:22"
+      },
+      {
+        "id": 8,
+        "product_id": 399,
+        "name": "La Muñeca",
+        "created_at": "2026-07-20 06:27:19",
+        "price": null,
+        "updated_at": "2026-07-20 06:27:19"
+      },
+      {
+        "id": 9,
+        "product_id": 400,
+        "name": "Ancla y viento",
+        "created_at": "2026-07-20 06:31:25",
+        "price": null,
+        "updated_at": "2026-07-20 06:31:25"
+      },
+      {
+        "id": 10,
+        "product_id": 401,
+        "name": "Rica",
+        "created_at": "2026-07-20 06:32:55",
+        "price": null,
+        "updated_at": "2026-07-20 06:32:55"
+      },
+      {
+        "id": 11,
+        "product_id": 12,
+        "name": "Colanta",
+        "created_at": "2026-07-20 06:36:12",
+        "price": null,
+        "updated_at": "2026-07-20 06:36:12"
+      },
+      {
+        "id": 12,
+        "product_id": 13,
+        "name": "Monteloro",
+        "created_at": "2026-07-20 06:37:18",
+        "price": null,
+        "updated_at": "2026-07-20 06:37:18"
+      },
+      {
+        "id": 13,
+        "product_id": 423,
+        "name": "Rica",
+        "created_at": "2026-07-20 06:41:36",
+        "price": null,
+        "updated_at": "2026-07-20 06:41:36"
+      },
+      {
+        "id": 14,
+        "product_id": 424,
+        "name": "Alkosto",
+        "created_at": "2026-07-20 06:42:25",
+        "price": null,
+        "updated_at": "2026-07-20 06:42:25"
+      },
+      {
+        "id": 15,
+        "product_id": 425,
+        "name": "Colanta",
+        "created_at": "2026-07-20 06:44:18",
+        "price": null,
+        "updated_at": "2026-07-20 06:44:18"
+      },
+      {
+        "id": 16,
+        "product_id": 427,
+        "name": "Rexona Clinica",
+        "created_at": "2026-07-20 06:46:00",
+        "price": null,
+        "updated_at": "2026-07-20 06:46:00"
+      },
+      {
+        "id": 17,
+        "product_id": 428,
+        "name": "Alpina",
+        "created_at": "2026-07-20 06:46:40",
+        "price": null,
+        "updated_at": "2026-07-20 06:46:40"
+      },
+      {
+        "id": 18,
+        "product_id": 429,
+        "name": "Alpina",
+        "created_at": "2026-07-20 06:49:18",
+        "price": null,
+        "updated_at": "2026-07-20 06:49:18"
+      },
+      {
+        "id": 19,
+        "product_id": 431,
+        "name": "McCain",
+        "created_at": "2026-07-20 06:50:55",
+        "price": null,
+        "updated_at": "2026-07-20 06:50:55"
+      },
+      {
+        "id": 20,
+        "product_id": 437,
+        "name": "Coca cola zero",
+        "created_at": "2026-07-20 06:55:56",
+        "price": null,
+        "updated_at": "2026-07-20 06:55:56"
+      },
+      {
+        "id": 21,
+        "product_id": 438,
+        "name": "Alkosto",
+        "created_at": "2026-07-20 06:56:27",
+        "price": null,
+        "updated_at": "2026-07-20 06:56:27"
+      },
+      {
+        "id": 22,
+        "product_id": 372,
+        "name": "Alkosto",
+        "created_at": "2026-07-20 06:56:54",
+        "price": null,
+        "updated_at": "2026-07-20 06:56:54"
+      },
+      {
+        "id": 23,
+        "product_id": 439,
+        "name": "Blancox",
+        "created_at": "2026-07-20 06:59:15",
+        "price": null,
+        "updated_at": "2026-07-20 06:59:15"
+      },
+      {
+        "id": 24,
+        "product_id": 446,
+        "name": "Sun Tea",
+        "created_at": "2026-07-20 07:03:42",
+        "price": null,
+        "updated_at": "2026-07-20 07:03:42"
+      },
+      {
+        "id": 25,
+        "product_id": 447,
+        "name": "Pasas",
+        "created_at": "2026-07-20 07:04:13",
+        "price": null,
+        "updated_at": "2026-07-20 07:04:13"
+      },
+      {
+        "id": 26,
+        "product_id": 1,
+        "name": "Flor Huila",
+        "created_at": "2026-07-20 07:05:13",
+        "price": 12900,
+        "updated_at": "2026-07-20 07:40:30"
+      },
+      {
+        "id": 27,
+        "product_id": 449,
+        "name": "Incauca",
+        "created_at": "2026-07-20 07:06:56",
+        "price": null,
+        "updated_at": "2026-07-20 07:06:56"
+      },
+      {
+        "id": 28,
+        "product_id": 450,
+        "name": "Buena Santerra",
+        "created_at": "2026-07-20 07:07:41",
+        "price": null,
+        "updated_at": "2026-07-20 07:07:41"
+      },
+      {
+        "id": 29,
+        "product_id": 451,
+        "name": "BdJ",
+        "created_at": "2026-07-20 07:09:49",
+        "price": null,
+        "updated_at": "2026-07-20 07:09:49"
+      },
+      {
+        "id": 30,
+        "product_id": 452,
+        "name": "Alqueria",
+        "created_at": "2026-07-20 07:10:35",
+        "price": null,
+        "updated_at": "2026-07-20 07:10:35"
+      },
+      {
+        "id": 31,
+        "product_id": 19,
+        "name": "Bimbo",
+        "created_at": "2026-07-20 07:11:13",
+        "price": null,
+        "updated_at": "2026-07-20 07:11:13"
+      },
+      {
+        "id": 32,
+        "product_id": 453,
+        "name": "Constancia",
+        "created_at": "2026-07-20 07:12:05",
+        "price": null,
+        "updated_at": "2026-07-20 07:12:05"
+      },
+      {
+        "id": 33,
+        "product_id": 455,
+        "name": "Constancia",
+        "created_at": "2026-07-20 07:13:35",
+        "price": null,
+        "updated_at": "2026-07-20 07:13:35"
+      },
+      {
+        "id": 34,
+        "product_id": 456,
+        "name": "Bimbo",
+        "created_at": "2026-07-20 07:14:20",
+        "price": null,
+        "updated_at": "2026-07-20 07:14:20"
+      },
+      {
+        "id": 35,
+        "product_id": 319,
+        "name": "Alkosto",
+        "created_at": "2026-07-20 07:15:17",
+        "price": null,
+        "updated_at": "2026-07-20 07:15:17"
+      },
+      {
+        "id": 36,
+        "product_id": 458,
+        "name": "Natumalta",
+        "created_at": "2026-07-20 07:16:45",
+        "price": null,
+        "updated_at": "2026-07-20 07:16:45"
+      },
+      {
+        "id": 37,
+        "product_id": 459,
+        "name": "Refisal",
+        "created_at": "2026-07-20 07:17:38",
+        "price": null,
+        "updated_at": "2026-07-20 07:17:38"
+      },
+      {
+        "id": 38,
+        "product_id": 461,
+        "name": "Alkosto",
+        "created_at": "2026-07-20 07:18:43",
+        "price": null,
+        "updated_at": "2026-07-20 07:18:43"
+      },
+      {
+        "id": 39,
+        "product_id": 463,
+        "name": "Alkosto",
+        "created_at": "2026-07-20 07:21:13",
+        "price": null,
+        "updated_at": "2026-07-20 07:21:13"
+      },
+      {
+        "id": 40,
+        "product_id": 16,
+        "name": "Rosal",
+        "created_at": "2026-07-20 07:21:44",
+        "price": null,
+        "updated_at": "2026-07-20 07:21:44"
+      }
+    ],
+    "inventory": [
+      {
+        "id": 3,
+        "product_id": 1,
+        "quantity": 0,
+        "updated_at": "2026-07-20 07:40:30",
+        "min_quantity": 0
+      }
+    ],
+    "price_history": [
+      {
+        "id": 1,
+        "product_id": 1,
+        "old_price": null,
+        "new_price": 4500,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 2,
+        "product_id": 2,
+        "old_price": null,
+        "new_price": 6200,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 3,
+        "product_id": 3,
+        "old_price": null,
+        "new_price": 14500,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 4,
+        "product_id": 4,
+        "old_price": null,
+        "new_price": 3800,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 5,
+        "product_id": 5,
+        "old_price": null,
+        "new_price": 3500,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 6,
+        "product_id": 6,
+        "old_price": null,
+        "new_price": 2800,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 7,
+        "product_id": 7,
+        "old_price": null,
+        "new_price": 4200,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 8,
+        "product_id": 8,
+        "old_price": null,
+        "new_price": 3900,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 10,
+        "product_id": 10,
+        "old_price": null,
+        "new_price": 18500,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 12,
+        "product_id": 12,
+        "old_price": null,
+        "new_price": 5200,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 13,
+        "product_id": 13,
+        "old_price": null,
+        "new_price": 12000,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 14,
+        "product_id": 14,
+        "old_price": null,
+        "new_price": 7200,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 15,
+        "product_id": 15,
+        "old_price": null,
+        "new_price": 4600,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 16,
+        "product_id": 16,
+        "old_price": null,
+        "new_price": 17800,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 18,
+        "product_id": 18,
+        "old_price": null,
+        "new_price": 18500,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 19,
+        "product_id": 19,
+        "old_price": null,
+        "new_price": 5000,
+        "changed_at": "2026-07-20 04:31:22"
+      },
+      {
+        "id": 26,
+        "product_id": 287,
+        "old_price": null,
+        "new_price": 1000,
+        "changed_at": "2026-07-20 05:52:04"
+      },
+      {
+        "id": 27,
+        "product_id": 288,
+        "old_price": null,
+        "new_price": 5000,
+        "changed_at": "2026-07-20 05:52:18"
+      },
+      {
+        "id": 28,
+        "product_id": 16,
+        "old_price": 17800,
+        "new_price": 32000,
+        "changed_at": "2026-07-20 05:58:29"
+      },
+      {
+        "id": 29,
+        "product_id": 308,
+        "old_price": null,
+        "new_price": 8000,
+        "changed_at": "2026-07-20 05:59:02"
+      },
+      {
+        "id": 31,
+        "product_id": 348,
+        "old_price": null,
+        "new_price": 40000,
+        "changed_at": "2026-07-20 06:03:19"
+      },
+      {
+        "id": 32,
+        "product_id": 349,
+        "old_price": null,
+        "new_price": 29600,
+        "changed_at": "2026-07-20 06:08:56"
+      },
+      {
+        "id": 33,
+        "product_id": 350,
+        "old_price": null,
+        "new_price": 5900,
+        "changed_at": "2026-07-20 06:09:56"
+      },
+      {
+        "id": 34,
+        "product_id": 348,
+        "old_price": 40000,
+        "new_price": 42000,
+        "changed_at": "2026-07-20 06:10:27"
+      },
+      {
+        "id": 35,
+        "product_id": 351,
+        "old_price": null,
+        "new_price": 19900,
+        "changed_at": "2026-07-20 06:11:29"
+      },
+      {
+        "id": 36,
+        "product_id": 2,
+        "old_price": 6200,
+        "new_price": 7000,
+        "changed_at": "2026-07-20 06:13:03"
+      },
+      {
+        "id": 37,
+        "product_id": 353,
+        "old_price": null,
+        "new_price": 11500,
+        "changed_at": "2026-07-20 06:13:44"
+      },
+      {
+        "id": 38,
+        "product_id": 354,
+        "old_price": null,
+        "new_price": 10900,
+        "changed_at": "2026-07-20 06:15:51"
+      },
+      {
+        "id": 39,
+        "product_id": 355,
+        "old_price": null,
+        "new_price": 9000,
+        "changed_at": "2026-07-20 06:16:48"
+      },
+      {
+        "id": 40,
+        "product_id": 394,
+        "old_price": null,
+        "new_price": 7600,
+        "changed_at": "2026-07-20 06:22:14"
+      },
+      {
+        "id": 41,
+        "product_id": 395,
+        "old_price": null,
+        "new_price": 23000,
+        "changed_at": "2026-07-20 06:23:51"
+      },
+      {
+        "id": 42,
+        "product_id": 396,
+        "old_price": null,
+        "new_price": 5900,
+        "changed_at": "2026-07-20 06:24:33"
+      },
+      {
+        "id": 43,
+        "product_id": 397,
+        "old_price": null,
+        "new_price": 14900,
+        "changed_at": "2026-07-20 06:25:04"
+      },
+      {
+        "id": 44,
+        "product_id": 398,
+        "old_price": null,
+        "new_price": 15900,
+        "changed_at": "2026-07-20 06:25:54"
+      },
+      {
+        "id": 45,
+        "product_id": 4,
+        "old_price": 3800,
+        "new_price": 7700,
+        "changed_at": "2026-07-20 06:26:36"
+      },
+      {
+        "id": 46,
+        "product_id": 399,
+        "old_price": null,
+        "new_price": 11200,
+        "changed_at": "2026-07-20 06:27:19"
+      },
+      {
+        "id": 47,
+        "product_id": 287,
+        "old_price": 1000,
+        "new_price": 643,
+        "changed_at": "2026-07-20 06:29:04"
+      },
+      {
+        "id": 48,
+        "product_id": 287,
+        "old_price": 643,
+        "new_price": 30643,
+        "changed_at": "2026-07-20 06:29:15"
+      },
+      {
+        "id": 49,
+        "product_id": 288,
+        "old_price": 5000,
+        "new_price": 71094,
+        "changed_at": "2026-07-20 06:30:30"
+      },
+      {
+        "id": 50,
+        "product_id": 400,
+        "old_price": null,
+        "new_price": 32000,
+        "changed_at": "2026-07-20 06:31:25"
+      },
+      {
+        "id": 51,
+        "product_id": 401,
+        "old_price": null,
+        "new_price": 18300,
+        "changed_at": "2026-07-20 06:32:55"
+      },
+      {
+        "id": 52,
+        "product_id": 10,
+        "old_price": 18500,
+        "new_price": 27000,
+        "changed_at": "2026-07-20 06:33:23"
+      },
+      {
+        "id": 53,
+        "product_id": 402,
+        "old_price": null,
+        "new_price": 31300,
+        "changed_at": "2026-07-20 06:34:55"
+      },
+      {
+        "id": 54,
+        "product_id": 12,
+        "old_price": 5200,
+        "new_price": 52640,
+        "changed_at": "2026-07-20 06:36:19"
+      },
+      {
+        "id": 55,
+        "product_id": 1,
+        "old_price": 4500,
+        "new_price": 1234.56,
+        "changed_at": "2026-07-20 06:36:58"
+      },
+      {
+        "id": 56,
+        "product_id": 1,
+        "old_price": 1234.56,
+        "new_price": 4500,
+        "changed_at": "2026-07-20 06:36:58"
+      },
+      {
+        "id": 57,
+        "product_id": 13,
+        "old_price": 12000,
+        "new_price": 24600,
+        "changed_at": "2026-07-20 06:37:23"
+      },
+      {
+        "id": 58,
+        "product_id": 422,
+        "old_price": null,
+        "new_price": 23188,
+        "changed_at": "2026-07-20 06:39:57"
+      },
+      {
+        "id": 59,
+        "product_id": 423,
+        "old_price": null,
+        "new_price": 8300,
+        "changed_at": "2026-07-20 06:41:36"
+      },
+      {
+        "id": 60,
+        "product_id": 424,
+        "old_price": null,
+        "new_price": 23200,
+        "changed_at": "2026-07-20 06:42:25"
+      },
+      {
+        "id": 61,
+        "product_id": 425,
+        "old_price": null,
+        "new_price": 10800,
+        "changed_at": "2026-07-20 06:44:18"
+      },
+      {
+        "id": 62,
+        "product_id": 5,
+        "old_price": 3500,
+        "new_price": 28200,
+        "changed_at": "2026-07-20 06:45:16"
+      },
+      {
+        "id": 63,
+        "product_id": 427,
+        "old_price": null,
+        "new_price": 25000,
+        "changed_at": "2026-07-20 06:46:00"
+      },
+      {
+        "id": 64,
+        "product_id": 428,
+        "old_price": null,
+        "new_price": 15000,
+        "changed_at": "2026-07-20 06:46:40"
+      },
+      {
+        "id": 65,
+        "product_id": 6,
+        "old_price": 2800,
+        "new_price": 9016,
+        "changed_at": "2026-07-20 06:47:53"
+      },
+      {
+        "id": 66,
+        "product_id": 429,
+        "old_price": null,
+        "new_price": 27000,
+        "changed_at": "2026-07-20 06:49:18"
+      },
+      {
+        "id": 67,
+        "product_id": 430,
+        "old_price": null,
+        "new_price": 19300,
+        "changed_at": "2026-07-20 06:50:11"
+      },
+      {
+        "id": 68,
+        "product_id": 431,
+        "old_price": null,
+        "new_price": 22900,
+        "changed_at": "2026-07-20 06:50:55"
+      },
+      {
+        "id": 69,
+        "product_id": 432,
+        "old_price": null,
+        "new_price": 18870,
+        "changed_at": "2026-07-20 06:51:36"
+      },
+      {
+        "id": 70,
+        "product_id": 433,
+        "old_price": null,
+        "new_price": 8900,
+        "changed_at": "2026-07-20 06:52:17"
+      },
+      {
+        "id": 71,
+        "product_id": 434,
+        "old_price": null,
+        "new_price": 8168,
+        "changed_at": "2026-07-20 06:53:10"
+      },
+      {
+        "id": 72,
+        "product_id": 435,
+        "old_price": null,
+        "new_price": 2665,
+        "changed_at": "2026-07-20 06:53:44"
+      },
+      {
+        "id": 73,
+        "product_id": 436,
+        "old_price": null,
+        "new_price": 19800,
+        "changed_at": "2026-07-20 06:54:14"
+      },
+      {
+        "id": 74,
+        "product_id": 437,
+        "old_price": null,
+        "new_price": 24300,
+        "changed_at": "2026-07-20 06:55:56"
+      },
+      {
+        "id": 75,
+        "product_id": 438,
+        "old_price": null,
+        "new_price": 28900,
+        "changed_at": "2026-07-20 06:56:27"
+      },
+      {
+        "id": 76,
+        "product_id": 372,
+        "old_price": 23000,
+        "new_price": 43900,
+        "changed_at": "2026-07-20 06:57:03"
+      },
+      {
+        "id": 77,
+        "product_id": 439,
+        "old_price": null,
+        "new_price": 10900,
+        "changed_at": "2026-07-20 06:59:15"
+      },
+      {
+        "id": 78,
+        "product_id": 440,
+        "old_price": null,
+        "new_price": 6900,
+        "changed_at": "2026-07-20 06:59:50"
+      },
+      {
+        "id": 79,
+        "product_id": 441,
+        "old_price": null,
+        "new_price": 1700,
+        "changed_at": "2026-07-20 07:00:37"
+      },
+      {
+        "id": 80,
+        "product_id": 442,
+        "old_price": null,
+        "new_price": 11200,
+        "changed_at": "2026-07-20 07:01:05"
+      },
+      {
+        "id": 81,
+        "product_id": 443,
+        "old_price": null,
+        "new_price": 8500,
+        "changed_at": "2026-07-20 07:01:42"
+      },
+      {
+        "id": 82,
+        "product_id": 444,
+        "old_price": null,
+        "new_price": 14000,
+        "changed_at": "2026-07-20 07:02:24"
+      },
+      {
+        "id": 83,
+        "product_id": 445,
+        "old_price": null,
+        "new_price": 6700,
+        "changed_at": "2026-07-20 07:03:11"
+      },
+      {
+        "id": 84,
+        "product_id": 446,
+        "old_price": null,
+        "new_price": 15500,
+        "changed_at": "2026-07-20 07:03:42"
+      },
+      {
+        "id": 85,
+        "product_id": 447,
+        "old_price": null,
+        "new_price": 9900,
+        "changed_at": "2026-07-20 07:04:13"
+      },
+      {
+        "id": 86,
+        "product_id": 1,
+        "old_price": 4500,
+        "new_price": 12900,
+        "changed_at": "2026-07-20 07:05:20"
+      },
+      {
+        "id": 87,
+        "product_id": 448,
+        "old_price": null,
+        "new_price": 14900,
+        "changed_at": "2026-07-20 07:06:12"
+      },
+      {
+        "id": 88,
+        "product_id": 449,
+        "old_price": null,
+        "new_price": 9200,
+        "changed_at": "2026-07-20 07:06:56"
+      },
+      {
+        "id": 89,
+        "product_id": 450,
+        "old_price": null,
+        "new_price": 7300,
+        "changed_at": "2026-07-20 07:07:41"
+      },
+      {
+        "id": 90,
+        "product_id": 451,
+        "old_price": null,
+        "new_price": 9800,
+        "changed_at": "2026-07-20 07:09:49"
+      },
+      {
+        "id": 91,
+        "product_id": 452,
+        "old_price": null,
+        "new_price": 12000,
+        "changed_at": "2026-07-20 07:10:35"
+      },
+      {
+        "id": 92,
+        "product_id": 19,
+        "old_price": 5000,
+        "new_price": 7600,
+        "changed_at": "2026-07-20 07:11:22"
+      },
+      {
+        "id": 93,
+        "product_id": 453,
+        "old_price": null,
+        "new_price": 14000,
+        "changed_at": "2026-07-20 07:12:05"
+      },
+      {
+        "id": 94,
+        "product_id": 454,
+        "old_price": null,
+        "new_price": 32000,
+        "changed_at": "2026-07-20 07:12:39"
+      },
+      {
+        "id": 95,
+        "product_id": 455,
+        "old_price": null,
+        "new_price": 7900,
+        "changed_at": "2026-07-20 07:13:35"
+      },
+      {
+        "id": 96,
+        "product_id": 456,
+        "old_price": null,
+        "new_price": 15500,
+        "changed_at": "2026-07-20 07:14:20"
+      },
+      {
+        "id": 97,
+        "product_id": 319,
+        "old_price": 16000,
+        "new_price": 52000,
+        "changed_at": "2026-07-20 07:15:25"
+      },
+      {
+        "id": 98,
+        "product_id": 457,
+        "old_price": null,
+        "new_price": 13800,
+        "changed_at": "2026-07-20 07:16:19"
+      },
+      {
+        "id": 99,
+        "product_id": 458,
+        "old_price": null,
+        "new_price": 3000,
+        "changed_at": "2026-07-20 07:16:45"
+      },
+      {
+        "id": 100,
+        "product_id": 308,
+        "old_price": 8000,
+        "new_price": 7400,
+        "changed_at": "2026-07-20 07:17:06"
+      },
+      {
+        "id": 101,
+        "product_id": 459,
+        "old_price": null,
+        "new_price": 7900,
+        "changed_at": "2026-07-20 07:17:38"
+      },
+      {
+        "id": 102,
+        "product_id": 460,
+        "old_price": null,
+        "new_price": 5210,
+        "changed_at": "2026-07-20 07:18:04"
+      },
+      {
+        "id": 103,
+        "product_id": 461,
+        "old_price": null,
+        "new_price": 16580,
+        "changed_at": "2026-07-20 07:18:43"
+      },
+      {
+        "id": 104,
+        "product_id": 8,
+        "old_price": 3900,
+        "new_price": 24000,
+        "changed_at": "2026-07-20 07:19:42"
+      },
+      {
+        "id": 105,
+        "product_id": 462,
+        "old_price": null,
+        "new_price": 10500,
+        "changed_at": "2026-07-20 07:20:37"
+      },
+      {
+        "id": 106,
+        "product_id": 463,
+        "old_price": null,
+        "new_price": 16500,
+        "changed_at": "2026-07-20 07:21:13"
+      },
+      {
+        "id": 107,
+        "product_id": 16,
+        "old_price": 32000,
+        "new_price": 39780,
+        "changed_at": "2026-07-20 07:21:51"
+      }
+    ],
+    "shopping_lists": [
+      {
+        "id": 3,
+        "name": "Fernando",
+        "created_at": "2026-07-20 04:02:32",
+        "completed_at": null,
+        "completed_total": null
+      }
+    ],
+    "list_items": [
+      {
+        "id": 6,
+        "list_id": 3,
+        "product_id": 439,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 10900
+      },
+      {
+        "id": 7,
+        "list_id": 3,
+        "product_id": 430,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 19300
+      },
+      {
+        "id": 8,
+        "list_id": 3,
+        "product_id": 427,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 25000
+      },
+      {
+        "id": 9,
+        "list_id": 3,
+        "product_id": 372,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 43900
+      },
+      {
+        "id": 10,
+        "list_id": 3,
+        "product_id": 398,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 15900
+      },
+      {
+        "id": 12,
+        "list_id": 3,
+        "product_id": 308,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 7400
+      },
+      {
+        "id": 13,
+        "list_id": 3,
+        "product_id": 15,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 4600
+      },
+      {
+        "id": 14,
+        "list_id": 3,
+        "product_id": 463,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 16500
+      },
+      {
+        "id": 15,
+        "list_id": 3,
+        "product_id": 16,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 39780
+      },
+      {
+        "id": 16,
+        "list_id": 3,
+        "product_id": 438,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 28900
+      },
+      {
+        "id": 17,
+        "list_id": 3,
+        "product_id": 348,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 42000
+      },
+      {
+        "id": 18,
+        "list_id": 3,
+        "product_id": 400,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 32000
+      },
+      {
+        "id": 19,
+        "list_id": 3,
+        "product_id": 10,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 27000
+      },
+      {
+        "id": 20,
+        "list_id": 3,
+        "product_id": 461,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 16580
+      },
+      {
+        "id": 21,
+        "list_id": 3,
+        "product_id": 349,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 29600
+      },
+      {
+        "id": 22,
+        "list_id": 3,
+        "product_id": 319,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 52000
+      },
+      {
+        "id": 23,
+        "list_id": 3,
+        "product_id": 423,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 8300
+      },
+      {
+        "id": 24,
+        "list_id": 3,
+        "product_id": 454,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 32000
+      },
+      {
+        "id": 25,
+        "list_id": 3,
+        "product_id": 402,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 31300
+      },
+      {
+        "id": 26,
+        "list_id": 3,
+        "product_id": 288,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 71094
+      },
+      {
+        "id": 27,
+        "list_id": 3,
+        "product_id": 287,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 30643
+      },
+      {
+        "id": 28,
+        "list_id": 3,
+        "product_id": 401,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 18300
+      },
+      {
+        "id": 29,
+        "list_id": 3,
+        "product_id": 422,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 23188
+      },
+      {
+        "id": 30,
+        "list_id": 3,
+        "product_id": 1,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 12900
+      },
+      {
+        "id": 31,
+        "list_id": 3,
+        "product_id": 396,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 5900
+      },
+      {
+        "id": 32,
+        "list_id": 3,
+        "product_id": 2,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 7000
+      },
+      {
+        "id": 33,
+        "list_id": 3,
+        "product_id": 457,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 13800
+      },
+      {
+        "id": 35,
+        "list_id": 3,
+        "product_id": 453,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 14000
+      },
+      {
+        "id": 37,
+        "list_id": 3,
+        "product_id": 4,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 7700
+      },
+      {
+        "id": 38,
+        "list_id": 3,
+        "product_id": 399,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 11200
+      },
+      {
+        "id": 39,
+        "list_id": 3,
+        "product_id": 459,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 7900
+      },
+      {
+        "id": 40,
+        "list_id": 3,
+        "product_id": 455,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 7900
+      },
+      {
+        "id": 41,
+        "list_id": 3,
+        "product_id": 355,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 9000
+      },
+      {
+        "id": 42,
+        "list_id": 3,
+        "product_id": 440,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 6900
+      },
+      {
+        "id": 43,
+        "list_id": 3,
+        "product_id": 431,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 22900
+      },
+      {
+        "id": 44,
+        "list_id": 3,
+        "product_id": 460,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 5210
+      },
+      {
+        "id": 45,
+        "list_id": 3,
+        "product_id": 432,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 18870
+      },
+      {
+        "id": 46,
+        "list_id": 3,
+        "product_id": 6,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 9016
+      },
+      {
+        "id": 47,
+        "list_id": 3,
+        "product_id": 451,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 9800
+      },
+      {
+        "id": 48,
+        "list_id": 3,
+        "product_id": 435,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 2665
+      },
+      {
+        "id": 49,
+        "list_id": 3,
+        "product_id": 443,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 8500
+      },
+      {
+        "id": 50,
+        "list_id": 3,
+        "product_id": 442,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 11200
+      },
+      {
+        "id": 51,
+        "list_id": 3,
+        "product_id": 434,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 8168
+      },
+      {
+        "id": 52,
+        "list_id": 3,
+        "product_id": 436,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 19800
+      },
+      {
+        "id": 53,
+        "list_id": 3,
+        "product_id": 8,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 24000
+      },
+      {
+        "id": 54,
+        "list_id": 3,
+        "product_id": 433,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 8900
+      },
+      {
+        "id": 55,
+        "list_id": 3,
+        "product_id": 441,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 1700
+      },
+      {
+        "id": 56,
+        "list_id": 3,
+        "product_id": 444,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 14000
+      },
+      {
+        "id": 57,
+        "list_id": 3,
+        "product_id": 5,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 28200
+      },
+      {
+        "id": 58,
+        "list_id": 3,
+        "product_id": 447,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 9900
+      },
+      {
+        "id": 59,
+        "list_id": 3,
+        "product_id": 450,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 7300
+      },
+      {
+        "id": 60,
+        "list_id": 3,
+        "product_id": 429,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 27000
+      },
+      {
+        "id": 61,
+        "list_id": 3,
+        "product_id": 452,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 12000
+      },
+      {
+        "id": 62,
+        "list_id": 3,
+        "product_id": 428,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 15000
+      },
+      {
+        "id": 63,
+        "list_id": 3,
+        "product_id": 12,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 52640
+      },
+      {
+        "id": 64,
+        "list_id": 3,
+        "product_id": 353,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 11500
+      },
+      {
+        "id": 65,
+        "list_id": 3,
+        "product_id": 425,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 10800
+      },
+      {
+        "id": 66,
+        "list_id": 3,
+        "product_id": 13,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 24600
+      },
+      {
+        "id": 67,
+        "list_id": 3,
+        "product_id": 424,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 23200
+      },
+      {
+        "id": 68,
+        "list_id": 3,
+        "product_id": 354,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 10900
+      },
+      {
+        "id": 69,
+        "list_id": 3,
+        "product_id": 14,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 7200
+      },
+      {
+        "id": 70,
+        "list_id": 3,
+        "product_id": 351,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 19900
+      },
+      {
+        "id": 71,
+        "list_id": 3,
+        "product_id": 437,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 24300
+      },
+      {
+        "id": 72,
+        "list_id": 3,
+        "product_id": 445,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 6700
+      },
+      {
+        "id": 73,
+        "list_id": 3,
+        "product_id": 19,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 7600
+      },
+      {
+        "id": 74,
+        "list_id": 3,
+        "product_id": 446,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 15500
+      },
+      {
+        "id": 75,
+        "list_id": 3,
+        "product_id": 397,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 14900
+      },
+      {
+        "id": 76,
+        "list_id": 3,
+        "product_id": 395,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 23000
+      },
+      {
+        "id": 77,
+        "list_id": 3,
+        "product_id": 448,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 14900
+      },
+      {
+        "id": 78,
+        "list_id": 3,
+        "product_id": 458,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 3000
+      },
+      {
+        "id": 79,
+        "list_id": 3,
+        "product_id": 394,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 7600
+      },
+      {
+        "id": 80,
+        "list_id": 3,
+        "product_id": 456,
+        "quantity": 1,
+        "checked": 0,
+        "price_snapshot": 15500
+      }
+    ],
+    "purchase_records": [],
+    "purchase_items": [],
+    "measurement_units": [
+      {
+        "id": 1,
+        "name": "kilo",
+        "created_at": "2026-07-20 04:48:30"
+      },
+      {
+        "id": 2,
+        "name": "gramos",
+        "created_at": "2026-07-20 04:48:30"
+      },
+      {
+        "id": 3,
+        "name": "litro",
+        "created_at": "2026-07-20 04:48:30"
+      },
+      {
+        "id": 4,
+        "name": "unidad",
+        "created_at": "2026-07-20 04:48:30"
+      },
+      {
+        "id": 5,
+        "name": "frasco",
+        "created_at": "2026-07-20 04:48:30"
+      },
+      {
+        "id": 6,
+        "name": "pote",
+        "created_at": "2026-07-20 04:48:30"
+      },
+      {
+        "id": 7,
+        "name": "sobre",
+        "created_at": "2026-07-20 04:48:30"
+      },
+      {
+        "id": 8,
+        "name": "caja",
+        "created_at": "2026-07-20 04:48:30"
+      },
+      {
+        "id": 45,
+        "name": "litros",
+        "created_at": "2026-07-20 05:48:37"
+      }
+    ]
+  }
+}
