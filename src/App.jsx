@@ -51,11 +51,13 @@ function getBaseCost(product) {
   }
 
   if (normalizedUnit.includes("litro") || normalizedUnit === "l" || normalizedUnit === "lt") {
-    return `${currency.format(product.price / (quantity * 1000))} por ml`;
+    const pricePerMl = product.price / (quantity * 1000);
+    return `${currency.format(pricePerMl)} por ml - ${currency.format(pricePerMl * 1000)} por litro`;
   }
 
   if (normalizedUnit.includes("mililitro") || normalizedUnit === "ml") {
-    return `${currency.format(product.price / quantity)} por ml`;
+    const pricePerMl = product.price / quantity;
+    return `${currency.format(pricePerMl)} por ml - ${currency.format(pricePerMl * 1000)} por litro`;
   }
 
   if (normalizedUnit.includes("gramo")) {
