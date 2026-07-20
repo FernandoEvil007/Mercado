@@ -1461,6 +1461,48 @@ select:focus {
   white-space: nowrap;
 }
 
+@media (max-width: 560px) {
+  .product-row {
+    grid-template-columns: 48px minmax(0, 1fr) minmax(104px, 0.9fr);
+    align-items: start;
+  }
+
+  .product-row .check-button {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .product-main {
+    grid-column: 2 / -1;
+    grid-row: 1;
+    align-self: center;
+    min-height: 48px;
+    justify-content: center;
+  }
+
+  .product-row .quantity-input {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .list-price-editor {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .product-numbers {
+    grid-column: 2 / -1;
+    grid-row: 3;
+  }
+
+  .product-row .icon-button {
+    grid-column: 1;
+    grid-row: 2 / 4;
+    align-self: stretch;
+    height: 100%;
+  }
+}
+
 .empty-state {
   display: grid;
   place-items: center;
@@ -1824,18 +1866,6 @@ select:focus {
     padding-left: 10px;
   }
 
-  .product-row {
-    grid-template-columns: 48px minmax(0, 1fr) 62px;
-  }
-
-  .list-price-editor {
-    grid-column: 2 / -1;
-  }
-
-  .product-numbers {
-    grid-column: 2 / -1;
-  }
-
   .shopping-item {
     grid-template-columns: 48px minmax(0, 1fr) 58px;
   }
@@ -1848,10 +1878,5 @@ select:focus {
   .shopping-current-price {
     grid-column: 2 / 3;
     grid-row: 3;
-  }
-
-  .product-row .icon-button {
-    grid-column: 1 / -1;
-    width: 100%;
   }
 }
