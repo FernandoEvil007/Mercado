@@ -5,6 +5,7 @@ import {
   BarChart3,
   Check,
   ChevronDown,
+  X,
   ClipboardList,
   Download,
   FolderPlus,
@@ -125,6 +126,27 @@ function getSparklinePoints(values, width = 116, height = 42) {
     .join(" ");
 }
 
+function getChartPoints(points, width = 320, height = 150) {
+  const values = points.map((point) => Number(point.price)).filter((value) => !Number.isNaN(value));
+  if (values.length === 0) {
+    return "";
+  }
+
+  const chartPoints = points.length === 1 ? [points[0], points[0]] : points;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const lastIndex = chartPoints.length - 1 || 1;
+
+  return chartPoints
+    .map((point, index) => {
+      const x = (index / lastIndex) * width;
+      const y = height - ((point.price - min) / span) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
 function MerkyLogo({ size = 26 }) {
   return (
     <span className="merky-logo" style={{ "--logo-size": `${size}px` }} aria-hidden="true">
@@ -204,6 +226,7 @@ function App() {
   const [listName, setListName] = useState("");
   const [query, setQuery] = useState("");
   const [historyQuery, setHistoryQuery] = useState("");
+  const [selectedTrendProductId, setSelectedTrendProductId] = useState(null);
   const [status, setStatus] = useState("Cargando datos...");
   const [toast, setToast] = useState("");
 
@@ -350,15 +373,22 @@ function App() {
           (first, second) =>
             new Date(first.changedAt) - new Date(second.changedAt) || first.id - second.id,
         );
-        const values = sortedEntries.flatMap((entry, index) =>
-          index === 0 && entry.oldPrice !== null ? [entry.oldPrice, entry.newPrice] : [entry.newPrice],
-        );
+        const points = sortedEntries.flatMap((entry, index) => {
+          const currentPoint = { price: entry.newPrice, changedAt: entry.changedAt, id: entry.id };
+          if (index === 0 && entry.oldPrice !== null) {
+            return [{ price: entry.oldPrice, changedAt: entry.changedAt, id: `${entry.id}-old` }, currentPoint];
+          }
+
+          return [currentPoint];
+        });
+        const values = points.map((point) => point.price);
         const firstEntry = sortedEntries[0];
         const lastEntry = sortedEntries[sortedEntries.length - 1];
         const initialPrice = values[0] ?? 0;
         const currentPrice = values[values.length - 1] ?? 0;
         const difference = currentPrice - initialPrice;
         const percent = initialPrice ? (difference / initialPrice) * 100 : 0;
+        const chartPoints = getChartPoints(points);
 
         return {
           productId: firstEntry.productId,
@@ -369,6 +399,11 @@ function App() {
           difference,
           percent,
           points: getSparklinePoints(values),
+          chartPoints,
+          chartPointList: chartPoints.split(" "),
+          timeline: points,
+          minPrice: Math.min(...values),
+          maxPrice: Math.max(...values),
           count: values.length,
           changedAt: lastEntry.changedAt,
         };
@@ -377,6 +412,10 @@ function App() {
       .sort((first, second) => first.name.localeCompare(second.name, "es", { sensitivity: "base" }))
       .slice(0, 12);
   }, [filteredPriceHistory]);
+  const selectedTrend = useMemo(
+    () => priceTrendCards.find((entry) => entry.productId === selectedTrendProductId) || null,
+    [priceTrendCards, selectedTrendProductId],
+  );
   const previousPricesByProduct = useMemo(
     () =>
       priceHistory.reduce((result, entry) => {
@@ -2219,7 +2258,12 @@ function App() {
                   </div>
                   <div className="trend-grid">
                     {priceTrendCards.map((entry) => (
-                      <article className="trend-card" key={`${entry.productId}-${entry.name}`}>
+                      <button
+                        className={selectedTrendProductId === entry.productId ? "trend-card active" : "trend-card"}
+                        key={`${entry.productId}-${entry.name}`}
+                        type="button"
+                        onClick={() => setSelectedTrendProductId(entry.productId)}
+                      >
                         <div className="trend-card-head">
                           <div>
                             <strong>{entry.name}</strong>
@@ -2236,6 +2280,61 @@ function App() {
                           <span>Inicio {currency.format(entry.initialPrice)}</span>
                           <strong>{currency.format(entry.currentPrice)}</strong>
                         </div>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {selectedTrend ? (
+                <section className="trend-detail">
+                  <div className="trend-detail-head">
+                    <div>
+                      <p className="eyebrow">Grafica completa</p>
+                      <h3>{selectedTrend.name}</h3>
+                      <span>{selectedTrend.category} - {selectedTrend.count} registros</span>
+                    </div>
+                    <button
+                      className="icon-button"
+                      type="button"
+                      onClick={() => setSelectedTrendProductId(null)}
+                      aria-label="Cerrar grafica detallada"
+                    >
+                      <X size={17} aria-hidden="true" />
+                    </button>
+                  </div>
+                  <svg className="detail-chart" viewBox="0 0 320 150" role="img" aria-label={`Grafica completa de ${selectedTrend.name}`}>
+                    <line x1="0" y1="150" x2="320" y2="150" />
+                    <line x1="0" y1="0" x2="0" y2="150" />
+                    <polyline points={selectedTrend.chartPoints} />
+                    {selectedTrend.timeline.map((point, index) => {
+                      const [x, y] = selectedTrend.chartPointList[index]?.split(",") || ["0", "150"];
+                      return <circle key={point.id} cx={x} cy={y} r="4" />;
+                    })}
+                  </svg>
+                  <div className="trend-detail-stats">
+                    <article>
+                      <span>Inicial</span>
+                      <strong>{currency.format(selectedTrend.initialPrice)}</strong>
+                    </article>
+                    <article>
+                      <span>Actual</span>
+                      <strong>{currency.format(selectedTrend.currentPrice)}</strong>
+                    </article>
+                    <article>
+                      <span>Minimo</span>
+                      <strong>{currency.format(selectedTrend.minPrice)}</strong>
+                    </article>
+                    <article>
+                      <span>Maximo</span>
+                      <strong>{currency.format(selectedTrend.maxPrice)}</strong>
+                    </article>
+                  </div>
+                  <div className="trend-timeline">
+                    {selectedTrend.timeline.map((point) => (
+                      <article key={point.id}>
+                        <span>{formatHistoryDate(point.changedAt)}</span>
+                        <strong>{currency.format(point.price)}</strong>
                       </article>
                     ))}
                   </div>
