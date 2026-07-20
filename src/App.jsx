@@ -193,6 +193,8 @@ function App() {
   const [registerPhone, setRegisterPhone] = useState("");
   const [loginStatus, setLoginStatus] = useState("");
   const [categories, setCategories] = useState([]);
+  const [catalogs, setCatalogs] = useState([]);
+  const [activeCatalogId, setActiveCatalogId] = useState(null);
   const [products, setProducts] = useState([]);
   const [lists, setLists] = useState([]);
   const [activeListId, setActiveListId] = useState(null);
@@ -222,6 +224,7 @@ function App() {
   const [showCategoryCreator, setShowCategoryCreator] = useState(false);
   const [showUnitManager, setShowUnitManager] = useState(false);
   const [categoryName, setCategoryName] = useState("");
+  const [catalogName, setCatalogName] = useState("");
   const [unitName, setUnitName] = useState("");
   const [listName, setListName] = useState("");
   const [query, setQuery] = useState("");
@@ -238,15 +241,7 @@ function App() {
 
     api("/bootstrap")
       .then((data) => {
-        setCategories(data.categories);
-        setProducts(data.products);
-        setLists(data.lists);
-        setActiveListId(data.activeListId);
-        setItems(data.items);
-        setPurchases(data.purchases || []);
-        setPriceHistory(data.priceHistory || []);
-        setInventory(data.inventory || []);
-        setUnits(data.units?.length ? data.units : fallbackUnits.map((name, index) => ({ id: `fallback-${index}`, name })));
+        applyBootstrapData(data);
         setStatus("");
       })
       .catch(() => {
@@ -256,6 +251,20 @@ function App() {
         setLoginStatus("La sesion vencio o no tiene permiso.");
       });
   }, [session?.token]);
+
+  function applyBootstrapData(data) {
+    setCategories(data.categories || []);
+    setCatalogs(data.catalogs || []);
+    setActiveCatalogId(data.activeCatalogId ?? null);
+    setProducts(data.products || []);
+    setLists(data.lists || []);
+    setActiveListId(data.activeListId ?? null);
+    setItems(data.items || []);
+    setPurchases(data.purchases || []);
+    setPriceHistory(data.priceHistory || []);
+    setInventory(data.inventory || []);
+    setUnits(data.units?.length ? data.units : fallbackUnits.map((name, index) => ({ id: `fallback-${index}`, name })));
+  }
 
   useEffect(() => {
     localStorage.setItem("mercardo-theme", theme);
@@ -271,6 +280,7 @@ function App() {
   }, [toast]);
 
   const activeList = lists.find((list) => list.id === activeListId);
+  const activeCatalog = catalogs.find((catalog) => catalog.id === activeCatalogId);
   const filteredProducts = useMemo(() => {
     const text = query.trim().toLowerCase();
     if (!text) {
@@ -511,13 +521,51 @@ function App() {
     localStorage.removeItem(sessionStorageKey);
     setSession(null);
     setCategories([]);
+    setCatalogs([]);
+    setActiveCatalogId(null);
     setProducts([]);
     setLists([]);
     setItems([]);
     setInventory([]);
     setPriceHistory([]);
     setPurchases([]);
+    setCatalogName("");
     setToast("Sesion cerrada");
+  }
+
+  async function createCatalog(event) {
+    event.preventDefault();
+    const name = catalogName.trim();
+    if (!name) {
+      return;
+    }
+
+    const data = await api("/catalogs", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+    applyBootstrapData(data);
+    setQuery("");
+    setCatalogName("");
+    setEditingProductId(null);
+    setToast(`${name} creado`);
+  }
+
+  async function switchCatalog(catalogId) {
+    const nextCatalogId = Number(catalogId);
+    if (!nextCatalogId || nextCatalogId === activeCatalogId) {
+      return;
+    }
+
+    const data = await api("/catalogs/active", {
+      method: "PATCH",
+      body: JSON.stringify({ catalogId: nextCatalogId }),
+    });
+    applyBootstrapData(data);
+    setQuery("");
+    setEditingProductId(null);
+    const catalog = data.catalogs?.find((item) => item.id === data.activeCatalogId);
+    setToast(`${catalog?.name || "Catalogo"} activo`);
   }
 
   async function createCategory(event) {
@@ -1468,8 +1516,37 @@ function App() {
               <div className="catalog-head">
                 <div className="panel-title">
                   <PackagePlus size={20} aria-hidden="true" />
-                  <h3>Catalogo</h3>
+                  <div>
+                    <h3>Catalogo</h3>
+                    <p>{activeCatalog?.name || "Catalogo alkosto"}</p>
+                  </div>
                 </div>
+                <section className="catalog-switcher" aria-label="Catalogos por almacen">
+                  <label>
+                    Almacen
+                    <select
+                      value={activeCatalogId || ""}
+                      onChange={(event) => switchCatalog(event.target.value)}
+                    >
+                      {catalogs.map((catalog) => (
+                        <option key={catalog.id} value={catalog.id}>
+                          {catalog.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <form className="catalog-create-form" onSubmit={createCatalog}>
+                    <input
+                      value={catalogName}
+                      onChange={(event) => setCatalogName(event.target.value)}
+                      placeholder="Nuevo catalogo"
+                      aria-label="Nombre del nuevo catalogo"
+                    />
+                    <button className="primary-button square" type="submit" aria-label="Crear catalogo">
+                      <Plus size={18} aria-hidden="true" />
+                    </button>
+                  </form>
+                </section>
                 <div className="search-box">
                   <Search size={18} aria-hidden="true" />
                   <input

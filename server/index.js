@@ -83,8 +83,15 @@ await getDb().exec(`
     name TEXT NOT NULL UNIQUE
   );
 
+  CREATE TABLE IF NOT EXISTS catalogs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    catalog_id INTEGER NOT NULL DEFAULT 1,
     category_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     brand TEXT NOT NULL DEFAULT '',
@@ -92,8 +99,9 @@ await getDb().exec(`
     unit TEXT NOT NULL DEFAULT 'unidad',
     presentation_quantity REAL NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (catalog_id) REFERENCES catalogs(id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-    UNIQUE(category_id, name)
+    UNIQUE(catalog_id, category_id, name)
   );
 
   CREATE TABLE IF NOT EXISTS shopping_lists (
@@ -179,6 +187,18 @@ await getDb().exec(`
 `);
 
 const productColumns = await getDb().all("PRAGMA table_info(products)");
+let defaultCatalog = await getDb().get("SELECT id, name FROM catalogs WHERE name = ?", "Catalogo alkosto");
+if (!defaultCatalog) {
+  const existingCatalog = await getDb().get("SELECT id, name FROM catalogs ORDER BY id LIMIT 1");
+  if (existingCatalog) {
+    await getDb().run("UPDATE catalogs SET name = ? WHERE id = ?", "Catalogo alkosto", existingCatalog.id);
+    defaultCatalog = { id: existingCatalog.id, name: "Catalogo alkosto" };
+  } else {
+    const result = await getDb().run("INSERT INTO catalogs (name) VALUES (?)", "Catalogo alkosto");
+    defaultCatalog = { id: result.lastID, name: "Catalogo alkosto" };
+  }
+}
+
 if (!productColumns.some((column) => column.name === "brand")) {
   await getDb().run("ALTER TABLE products ADD COLUMN brand TEXT NOT NULL DEFAULT ''");
 }
@@ -187,6 +207,55 @@ if (!productColumns.some((column) => column.name === "unit")) {
 }
 if (!productColumns.some((column) => column.name === "presentation_quantity")) {
   await getDb().run("ALTER TABLE products ADD COLUMN presentation_quantity REAL NOT NULL DEFAULT 1");
+}
+if (!productColumns.some((column) => column.name === "catalog_id")) {
+  await getDb().run("ALTER TABLE products ADD COLUMN catalog_id INTEGER NOT NULL DEFAULT 1");
+  await getDb().run("UPDATE products SET catalog_id = ?", defaultCatalog.id);
+}
+
+const productCatalogMigration = await getDb().get("SELECT value FROM app_settings WHERE key = ?", "products_catalog_unique_v1");
+if (!productCatalogMigration) {
+  await getDb().exec("PRAGMA foreign_keys = OFF");
+  await getDb().exec(`
+    CREATE TABLE IF NOT EXISTS products_catalog_migration (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      catalog_id INTEGER NOT NULL DEFAULT 1,
+      category_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      brand TEXT NOT NULL DEFAULT '',
+      price REAL NOT NULL DEFAULT 0,
+      unit TEXT NOT NULL DEFAULT 'unidad',
+      presentation_quantity REAL NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (catalog_id) REFERENCES catalogs(id) ON DELETE CASCADE,
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+      UNIQUE(catalog_id, category_id, name)
+    );
+  `);
+  await getDb().run(`
+    INSERT OR IGNORE INTO products_catalog_migration (
+      id, catalog_id, category_id, name, brand, price, unit, presentation_quantity, created_at
+    )
+    SELECT
+      id,
+      COALESCE(NULLIF(catalog_id, 0), ?),
+      category_id,
+      name,
+      COALESCE(brand, ''),
+      COALESCE(price, 0),
+      COALESCE(unit, 'unidad'),
+      COALESCE(presentation_quantity, 1),
+      COALESCE(created_at, CURRENT_TIMESTAMP)
+    FROM products
+  `, defaultCatalog.id);
+  await getDb().exec("DROP TABLE products");
+  await getDb().exec("ALTER TABLE products_catalog_migration RENAME TO products");
+  await getDb().exec("PRAGMA foreign_keys = ON");
+  await getDb().run(
+    "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+    "products_catalog_unique_v1",
+    "1",
+  );
 }
 
 const inventoryColumns = await getDb().all("PRAGMA table_info(inventory)");
@@ -221,7 +290,8 @@ if (!catalogSeeded && productCount.total === 0) {
       (await getDb().run("INSERT INTO categories (name) VALUES (?)", categoryName)).lastID;
 
     await getDb().run(
-      "INSERT OR IGNORE INTO products (category_id, name, price) VALUES (?, ?, ?)",
+      "INSERT OR IGNORE INTO products (catalog_id, category_id, name, price) VALUES (?, ?, ?, ?)",
+      defaultCatalog.id,
       categoryId,
       productName,
       price,
@@ -332,13 +402,12 @@ async function openSessionDatabase(session) {
 
   const userDbPath = getUserDbPath(session.dbFile);
   if (!appDbCache.has(userDbPath)) {
-    appDbCache.set(
-      userDbPath,
-      await open({
-        filename: userDbPath,
-        driver: sqlite3.Database,
-      }),
-    );
+    const userDb = await open({
+      filename: userDbPath,
+      driver: sqlite3.Database,
+    });
+    await ensureCatalogSupport(userDb);
+    appDbCache.set(userDbPath, userDb);
   }
 
   return appDbCache.get(userDbPath);
@@ -477,8 +546,145 @@ function normalizePresentationQuantity(value) {
   return Number.isNaN(quantity) || quantity <= 0 ? 1 : quantity;
 }
 
+async function ensureCatalogSupport(targetDb = getDb()) {
+  await targetDb.exec(`
+    CREATE TABLE IF NOT EXISTS catalogs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `);
+
+  let currentDefaultCatalog = await targetDb.get("SELECT id, name FROM catalogs WHERE name = ?", "Catalogo alkosto");
+  if (!currentDefaultCatalog) {
+    const existingCatalog = await targetDb.get("SELECT id, name FROM catalogs ORDER BY id LIMIT 1");
+    if (existingCatalog) {
+      await targetDb.run("UPDATE catalogs SET name = ? WHERE id = ?", "Catalogo alkosto", existingCatalog.id);
+      currentDefaultCatalog = { id: existingCatalog.id, name: "Catalogo alkosto" };
+    } else {
+      const result = await targetDb.run("INSERT INTO catalogs (name) VALUES (?)", "Catalogo alkosto");
+      currentDefaultCatalog = { id: result.lastID, name: "Catalogo alkosto" };
+    }
+  }
+
+  const columns = await targetDb.all("PRAGMA table_info(products)");
+  if (columns.length && !columns.some((column) => column.name === "catalog_id")) {
+    await targetDb.run("ALTER TABLE products ADD COLUMN catalog_id INTEGER NOT NULL DEFAULT 1");
+    await targetDb.run("UPDATE products SET catalog_id = ?", currentDefaultCatalog.id);
+  }
+
+  const migrated = await targetDb.get("SELECT value FROM app_settings WHERE key = ?", "products_catalog_unique_v1");
+  if (!migrated && columns.length) {
+    await targetDb.exec("PRAGMA foreign_keys = OFF");
+    await targetDb.exec(`
+      CREATE TABLE IF NOT EXISTS products_catalog_migration (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        catalog_id INTEGER NOT NULL DEFAULT 1,
+        category_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        brand TEXT NOT NULL DEFAULT '',
+        price REAL NOT NULL DEFAULT 0,
+        unit TEXT NOT NULL DEFAULT 'unidad',
+        presentation_quantity REAL NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (catalog_id) REFERENCES catalogs(id) ON DELETE CASCADE,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+        UNIQUE(catalog_id, category_id, name)
+      );
+    `);
+    await targetDb.run(`
+      INSERT OR IGNORE INTO products_catalog_migration (
+        id, catalog_id, category_id, name, brand, price, unit, presentation_quantity, created_at
+      )
+      SELECT
+        id,
+        COALESCE(NULLIF(catalog_id, 0), ?),
+        category_id,
+        name,
+        COALESCE(brand, ''),
+        COALESCE(price, 0),
+        COALESCE(unit, 'unidad'),
+        COALESCE(presentation_quantity, 1),
+        COALESCE(created_at, CURRENT_TIMESTAMP)
+      FROM products
+    `, currentDefaultCatalog.id);
+    await targetDb.exec("DROP TABLE products");
+    await targetDb.exec("ALTER TABLE products_catalog_migration RENAME TO products");
+    await targetDb.exec("PRAGMA foreign_keys = ON");
+    await targetDb.run(
+      "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+      "products_catalog_unique_v1",
+      "1",
+    );
+  }
+
+  const activeCatalog = await targetDb.get("SELECT value FROM app_settings WHERE key = ?", "active_catalog_id");
+  const activeCatalogExists = activeCatalog
+    ? await targetDb.get("SELECT id FROM catalogs WHERE id = ?", Number(activeCatalog.value))
+    : null;
+  if (!activeCatalogExists) {
+    await targetDb.run(
+      "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+      "active_catalog_id",
+      String(currentDefaultCatalog.id),
+    );
+  }
+
+  return currentDefaultCatalog;
+}
+
 async function getUnits() {
   return getDb().all("SELECT id, name FROM measurement_units ORDER BY name");
+}
+
+async function getCatalogs() {
+  return getDb().all("SELECT id, name, created_at AS createdAt FROM catalogs ORDER BY name COLLATE NOCASE");
+}
+
+async function getActiveCatalogId() {
+  await ensureCatalogSupport();
+  const catalogs = await getCatalogs();
+  const setting = await getDb().get("SELECT value FROM app_settings WHERE key = ?", "active_catalog_id");
+  const activeId = Number(setting?.value);
+  const activeCatalog =
+    catalogs.find((catalog) => catalog.id === activeId) ||
+    catalogs.find((catalog) => catalog.name === "Catalogo alkosto") ||
+    catalogs[0];
+
+  if (activeCatalog && activeCatalog.id !== activeId) {
+    await getDb().run(
+      "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+      "active_catalog_id",
+      String(activeCatalog.id),
+    );
+  }
+
+  return activeCatalog?.id ?? null;
+}
+
+async function getBootstrapData() {
+  const activeCatalogId = await getActiveCatalogId();
+  const [categories, catalogs, products, lists, priceHistory, inventory, units, purchases] = await Promise.all([
+    getDb().all("SELECT id, name FROM categories ORDER BY name"),
+    getCatalogs(),
+    getProducts(),
+    getDb().all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
+    getPriceHistory(),
+    getInventory(),
+    getUnits(),
+    getPurchaseRecords(),
+  ]);
+
+  const activeListId = lists[0]?.id ?? null;
+  const items = activeListId ? await getListItems(activeListId) : [];
+  const summary = await getSummary(activeListId);
+
+  return { categories, catalogs, activeCatalogId, products, lists, activeListId, items, priceHistory, inventory, units, purchases, summary };
 }
 
 async function saveBrandPrice(productId, name, price) {
@@ -496,9 +702,11 @@ async function saveBrandPrice(productId, name, price) {
 }
 
 async function getProducts() {
+  const activeCatalogId = await getActiveCatalogId();
   const products = await getDb().all(`
     SELECT
       products.id,
+      products.catalog_id AS catalogId,
       products.name,
       products.brand,
       products.price,
@@ -514,13 +722,15 @@ async function getProducts() {
       FROM product_brands
       GROUP BY product_id
     ) AS brand_list ON brand_list.product_id = products.id
+    WHERE products.catalog_id = ?
     ORDER BY categories.name, products.name
-  `);
+  `, activeCatalogId);
   const brandRows = await getDb().all(`
     SELECT product_id AS productId, name, price, updated_at AS updatedAt
     FROM product_brands
+    WHERE product_id IN (SELECT id FROM products WHERE catalog_id = ?)
     ORDER BY name COLLATE NOCASE
-  `);
+  `, activeCatalogId);
   const brandsByProduct = brandRows.reduce((groups, brand) => {
     if (!groups[brand.productId]) {
       groups[brand.productId] = [];
@@ -565,6 +775,7 @@ async function getListItems(listId) {
 }
 
 async function getInventory() {
+  const activeCatalogId = await getActiveCatalogId();
   return getDb().all(`
     SELECT
       inventory.id,
@@ -580,11 +791,13 @@ async function getInventory() {
     FROM inventory
     JOIN products ON products.id = inventory.product_id
     JOIN categories ON categories.id = products.category_id
+    WHERE products.catalog_id = ?
     ORDER BY categories.name, products.name
-  `);
+  `, activeCatalogId);
 }
 
 async function getPriceHistory() {
+  const activeCatalogId = await getActiveCatalogId();
   return getDb().all(`
     SELECT
       price_history.id,
@@ -597,9 +810,10 @@ async function getPriceHistory() {
     FROM price_history
     JOIN products ON products.id = price_history.product_id
     JOIN categories ON categories.id = products.category_id
+    WHERE products.catalog_id = ?
     ORDER BY products.name COLLATE NOCASE ASC, price_history.changed_at DESC, price_history.id DESC
     LIMIT 120
-  `);
+  `, activeCatalogId);
 }
 
 async function getPurchaseRecords() {
@@ -673,21 +887,7 @@ async function getSummary(activeListId = null) {
 }
 
 app.get("/api/bootstrap", async (_request, response) => {
-  const [categories, products, lists, priceHistory, inventory, units, purchases] = await Promise.all([
-    getDb().all("SELECT id, name FROM categories ORDER BY name"),
-    getProducts(),
-    getDb().all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
-    getPriceHistory(),
-    getInventory(),
-    getUnits(),
-    getPurchaseRecords(),
-  ]);
-
-  const activeListId = lists[0]?.id ?? null;
-  const items = activeListId ? await getListItems(activeListId) : [];
-  const summary = await getSummary(activeListId);
-
-  response.json({ categories, products, lists, activeListId, items, priceHistory, inventory, units, purchases, summary });
+  response.json(await getBootstrapData());
 });
 
 app.get("/api/summary", async (request, response) => {
@@ -698,6 +898,7 @@ app.get("/api/summary", async (request, response) => {
 app.get("/api/export", async (_request, response) => {
   const [
     categories,
+    catalogs,
     products,
     productBrands,
     inventory,
@@ -709,7 +910,8 @@ app.get("/api/export", async (_request, response) => {
     units,
   ] = await Promise.all([
     getDb().all("SELECT * FROM categories ORDER BY name"),
-    getDb().all("SELECT * FROM products ORDER BY name"),
+    getDb().all("SELECT * FROM catalogs ORDER BY name"),
+    getDb().all("SELECT * FROM products ORDER BY catalog_id, name"),
     getDb().all("SELECT * FROM product_brands ORDER BY product_id, name"),
     getDb().all("SELECT * FROM inventory ORDER BY product_id"),
     getDb().all("SELECT * FROM price_history ORDER BY changed_at DESC, id DESC"),
@@ -725,6 +927,7 @@ app.get("/api/export", async (_request, response) => {
   response.json({
     exportedAt: new Date().toISOString(),
     categories,
+    catalogs,
     products,
     productBrands,
     inventory,
@@ -735,6 +938,78 @@ app.get("/api/export", async (_request, response) => {
     listItems,
     units,
   });
+});
+
+app.get("/api/catalogs", async (_request, response) => {
+  response.json({
+    catalogs: await getCatalogs(),
+    activeCatalogId: await getActiveCatalogId(),
+  });
+});
+
+app.post("/api/catalogs", async (request, response) => {
+  const name = normalizeText(request.body.name);
+  if (!name) {
+    response.status(400).json({ error: "Catalog name is required." });
+    return;
+  }
+
+  const duplicate = await getDb().get("SELECT id FROM catalogs WHERE name = ?", name);
+  if (duplicate) {
+    response.status(409).json({ error: "Catalog already exists." });
+    return;
+  }
+
+  const sourceCatalogId = await getActiveCatalogId();
+  const result = await getDb().run("INSERT INTO catalogs (name) VALUES (?)", name);
+  const catalogId = result.lastID;
+
+  if (sourceCatalogId) {
+    const sourceProducts = await getDb().all(
+      "SELECT category_id AS categoryId, name, unit, presentation_quantity AS presentationQuantity FROM products WHERE catalog_id = ? ORDER BY name",
+      sourceCatalogId,
+    );
+    for (const product of sourceProducts) {
+      await getDb().run(
+        "INSERT OR IGNORE INTO products (catalog_id, category_id, name, brand, price, unit, presentation_quantity) VALUES (?, ?, ?, '', 0, ?, ?)",
+        catalogId,
+        product.categoryId,
+        product.name,
+        product.unit || "unidad",
+        product.presentationQuantity || 1,
+      );
+    }
+  }
+
+  await getDb().run(
+    "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+    "active_catalog_id",
+    String(catalogId),
+  );
+
+  response.status(201).json(await getBootstrapData());
+});
+
+app.patch("/api/catalogs/active", async (request, response) => {
+  const catalogId = Number(request.body.catalogId);
+  if (!catalogId) {
+    response.status(400).json({ error: "Valid catalog is required." });
+    return;
+  }
+
+  const catalog = await getDb().get("SELECT id FROM catalogs WHERE id = ?", catalogId);
+  if (!catalog) {
+    response.status(404).json({ error: "Catalog not found." });
+    return;
+  }
+
+  await getDb().run(
+    "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+    "active_catalog_id",
+    String(catalogId),
+  );
+
+  response.json(await getBootstrapData());
 });
 
 app.get("/api/inventory", async (_request, response) => {
@@ -868,6 +1143,7 @@ app.delete("/api/categories/:categoryId", async (request, response) => {
 });
 
 app.post("/api/products", async (request, response) => {
+  const catalogId = await getActiveCatalogId();
   const name = normalizeText(request.body.name);
   const brand = normalizeText(request.body.brand);
   const categoryId = Number(request.body.categoryId);
@@ -881,12 +1157,14 @@ app.post("/api/products", async (request, response) => {
   }
 
   const existing = await getDb().get(
-    "SELECT id, price FROM products WHERE category_id = ? AND name = ?",
+    "SELECT id, price FROM products WHERE catalog_id = ? AND category_id = ? AND name = ?",
+    catalogId,
     categoryId,
     name,
   );
   await getDb().run(
-    "INSERT INTO products (category_id, name, brand, price, unit, presentation_quantity) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(category_id, name) DO UPDATE SET brand = excluded.brand, price = excluded.price, unit = excluded.unit, presentation_quantity = excluded.presentation_quantity",
+    "INSERT INTO products (catalog_id, category_id, name, brand, price, unit, presentation_quantity) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(catalog_id, category_id, name) DO UPDATE SET brand = excluded.brand, price = excluded.price, unit = excluded.unit, presentation_quantity = excluded.presentation_quantity",
+    catalogId,
     categoryId,
     name,
     brand,
@@ -896,7 +1174,8 @@ app.post("/api/products", async (request, response) => {
   );
 
   const product = await getDb().get(
-    "SELECT id FROM products WHERE category_id = ? AND name = ?",
+    "SELECT id FROM products WHERE catalog_id = ? AND category_id = ? AND name = ?",
+    catalogId,
     categoryId,
     name,
   );
@@ -947,7 +1226,7 @@ app.patch("/api/products/:productId", async (request, response) => {
     return;
   }
 
-  const product = await getDb().get("SELECT id, name, brand, price, category_id AS categoryId FROM products WHERE id = ?", productId);
+  const product = await getDb().get("SELECT id, catalog_id AS catalogId, name, brand, price, category_id AS categoryId FROM products WHERE id = ?", productId);
   if (!product) {
     response.status(404).json({ error: "Product not found." });
     return;
@@ -961,7 +1240,8 @@ app.patch("/api/products/:productId", async (request, response) => {
     }
 
     const duplicate = await getDb().get(
-      "SELECT id FROM products WHERE category_id = ? AND name = ? AND id <> ?",
+      "SELECT id FROM products WHERE catalog_id = ? AND category_id = ? AND name = ? AND id <> ?",
+      product.catalogId,
       categoryId,
       product.name,
       productId,
@@ -977,7 +1257,8 @@ app.patch("/api/products/:productId", async (request, response) => {
   if (hasName) {
     const targetCategoryId = hasCategory ? categoryId : product.categoryId;
     const duplicate = await getDb().get(
-      "SELECT id FROM products WHERE category_id = ? AND name = ? AND id <> ?",
+      "SELECT id FROM products WHERE catalog_id = ? AND category_id = ? AND name = ? AND id <> ?",
+      product.catalogId,
       targetCategoryId,
       name,
       productId,
