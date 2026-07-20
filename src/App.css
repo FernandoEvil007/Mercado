@@ -751,6 +751,24 @@ select:focus {
   color: white;
 }
 
+.delete-product-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid color-mix(in srgb, var(--danger) 38%, var(--border));
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--danger) 9%, var(--panel-soft));
+  color: var(--danger);
+  font-size: 0.88rem;
+  font-weight: 850;
+}
+
+.delete-product-button:active {
+  transform: scale(0.98);
+}
+
 .catalog-row strong,
 .catalog-row em,
 .product-main strong,

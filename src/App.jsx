@@ -1040,6 +1040,14 @@ function App() {
                                           ))}
                                         </select>
                                       </label>
+                                      <button
+                                        className="delete-product-button"
+                                        type="button"
+                                        onClick={() => deleteProduct(product)}
+                                      >
+                                        <Trash2 size={17} aria-hidden="true" />
+                                        Eliminar producto
+                                      </button>
                                     </div>
                                   ) : null}
                                 </div>
