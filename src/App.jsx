@@ -99,6 +99,7 @@ function App() {
   const [units, setUnits] = useState(fallbackUnits.map((name, index) => ({ id: `fallback-${index}`, name })));
   const [inventoryDrafts, setInventoryDrafts] = useState({});
   const [productDrafts, setProductDrafts] = useState({});
+  const [nameDrafts, setNameDrafts] = useState({});
   const [priceDrafts, setPriceDrafts] = useState({});
   const [presentationQuantityDrafts, setPresentationQuantityDrafts] = useState({});
   const [unitDrafts, setUnitDrafts] = useState({});
@@ -359,6 +360,33 @@ function App() {
     setPriceDrafts((current) => ({ ...current, [productId]: value }));
   }
 
+  function updateNameDraft(productId, value) {
+    setNameDrafts((current) => ({ ...current, [productId]: value }));
+  }
+
+  async function saveProductName(product) {
+    const name = (nameDrafts[product.id] ?? product.name).trim();
+    if (!name || name === product.name) {
+      updateNameDraft(product.id, undefined);
+      return;
+    }
+
+    const data = await api(`/products/${product.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    });
+    setProducts(data.products);
+    setInventory(data.inventory || inventory);
+    setPriceHistory(data.priceHistory || priceHistory);
+    setItems((current) =>
+      current.map((item) =>
+        item.productId === product.id ? { ...item, name } : item,
+      ),
+    );
+    updateNameDraft(product.id, undefined);
+    setToast(`${product.name} ahora es ${name}`);
+  }
+
   function updatePresentationQuantityDraft(productId, value) {
     setPresentationQuantityDrafts((current) => ({ ...current, [productId]: value }));
   }
@@ -422,6 +450,11 @@ function App() {
       return next;
     });
     setPriceDrafts((current) => {
+      const next = { ...current };
+      delete next[product.id];
+      return next;
+    });
+    setNameDrafts((current) => {
       const next = { ...current };
       delete next[product.id];
       return next;
@@ -540,6 +573,7 @@ function App() {
   function togglePriceEditor(product) {
     setEditingProductId((current) => (current === product.id ? null : product.id));
     setPriceDrafts((current) => ({ ...current, [product.id]: product.price }));
+    setNameDrafts((current) => ({ ...current, [product.id]: product.name }));
   }
 
   function formatHistoryDate(value) {
@@ -756,6 +790,20 @@ function App() {
                                   </div>
                                   {editingProductId === product.id ? (
                                     <div className="product-dropdown">
+                                      <label className="price-editor">
+                                        Nombre
+                                        <input
+                                          value={nameDrafts[product.id] ?? product.name}
+                                          onChange={(event) => updateNameDraft(product.id, event.target.value)}
+                                          onBlur={() => saveProductName(product)}
+                                          onKeyDown={(event) => {
+                                            if (event.key === "Enter") {
+                                              event.currentTarget.blur();
+                                            }
+                                          }}
+                                          aria-label={`Cambiar nombre de ${product.name}`}
+                                        />
+                                      </label>
                                       <label className="price-editor">
                                         Cambiar precio
                                         <input

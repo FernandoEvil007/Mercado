@@ -375,17 +375,20 @@ app.post("/api/products", async (request, response) => {
 app.patch("/api/products/:productId", async (request, response) => {
   const productId = Number(request.params.productId);
   const hasPrice = request.body.price !== undefined;
+  const hasName = request.body.name !== undefined;
   const hasUnit = request.body.unit !== undefined;
   const hasPresentationQuantity = request.body.presentationQuantity !== undefined;
   const hasCategory = request.body.categoryId !== undefined;
   const price = Number(request.body.price);
+  const name = normalizeText(request.body.name);
   const unit = hasUnit ? await ensureUnit(request.body.unit) : "unidad";
   const presentationQuantity = normalizePresentationQuantity(request.body.presentationQuantity);
   const categoryId = Number(request.body.categoryId);
 
   if (
     !productId ||
-    (!hasPrice && !hasUnit && !hasPresentationQuantity && !hasCategory) ||
+    (!hasPrice && !hasName && !hasUnit && !hasPresentationQuantity && !hasCategory) ||
+    (hasName && !name) ||
     (hasPrice && (Number.isNaN(price) || price < 0)) ||
     (hasCategory && !categoryId)
   ) {
@@ -418,6 +421,22 @@ app.patch("/api/products/:productId", async (request, response) => {
     }
 
     await db.run("UPDATE products SET category_id = ? WHERE id = ?", categoryId, productId);
+  }
+
+  if (hasName) {
+    const targetCategoryId = hasCategory ? categoryId : product.categoryId;
+    const duplicate = await db.get(
+      "SELECT id FROM products WHERE category_id = ? AND name = ? AND id <> ?",
+      targetCategoryId,
+      name,
+      productId,
+    );
+    if (duplicate) {
+      response.status(409).json({ error: "Product already exists in category." });
+      return;
+    }
+
+    await db.run("UPDATE products SET name = ? WHERE id = ?", name, productId);
   }
 
   if (hasPrice) {
