@@ -20,9 +20,11 @@ import {
   Search,
   Settings,
   Share2,
+  ShieldCheck,
   ShoppingBasket,
   Sun,
   Trash2,
+  UserRound,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:3001/api" : "/api");
@@ -88,6 +90,26 @@ function groupByCategory(products) {
     groups[product.category].push(product);
     return groups;
   }, {});
+}
+
+function getCategoryAccent(categoryName) {
+  const palette = ["#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6", "#f97316", "#64748b"];
+  const index = String(categoryName || "")
+    .split("")
+    .reduce((total, letter) => total + letter.charCodeAt(0), 0) % palette.length;
+  return palette[index];
+}
+
+function getCategoryStyle(categoryName) {
+  return { "--category-accent": getCategoryAccent(categoryName) };
+}
+
+function MerkyLogo({ size = 26 }) {
+  return (
+    <span className="merky-logo" style={{ "--logo-size": `${size}px` }} aria-hidden="true">
+      M
+    </span>
+  );
 }
 
 function getStoredSession() {
@@ -313,6 +335,8 @@ function App() {
   );
   const shoppingProgress = items.length ? Math.round((totals.checked / items.length) * 100) : 0;
   const canCompletePurchase = items.length > 0 && totals.checked === items.length;
+  const averageListPrice = items.length ? totals.amount / items.length : 0;
+  const stockedProducts = inventoryProducts.filter((product) => product.quantity > 0).length;
   const summary = useMemo(() => {
     const priceChanges = priceHistory
       .filter((entry) => entry.oldPrice !== null)
@@ -933,15 +957,30 @@ function App() {
         <section className="login-shell">
           <div className="login-card">
             <div className="brand-mark">
-              <ShoppingBasket size={26} aria-hidden="true" />
+              <MerkyLogo size={26} />
             </div>
-            <div>
+            <div className="login-title-block">
               <p className="eyebrow">Base protegida</p>
               <h1>Merky</h1>
+              <span>Mercado, inventario y precios en un solo lugar.</span>
             </div>
             <div className="creator-signature" aria-label="Aplicacion creada por Fernando Rodriguez Bayona">
               <span>Creada por</span>
               <strong>Fernando Rodriguez Bayona</strong>
+            </div>
+            <div className="login-highlights" aria-label="Resumen de Merky">
+              <article>
+                <ShieldCheck size={17} aria-hidden="true" />
+                <span>Privada</span>
+              </article>
+              <article>
+                <BarChart3 size={17} aria-hidden="true" />
+                <span>Precios</span>
+              </article>
+              <article>
+                <House size={17} aria-hidden="true" />
+                <span>Inventario</span>
+              </article>
             </div>
             <form className="login-form" onSubmit={submitAuth}>
               <label>
@@ -977,7 +1016,7 @@ function App() {
                 </>
               ) : null}
               <label>
-                {authMode === "register" ? "Contraseña" : "Clave de acceso"}
+                {authMode === "register" ? "Contrasena" : "Clave de acceso"}
                 <input
                   value={loginAccessCode}
                   onChange={(event) => setLoginAccessCode(event.target.value)}
@@ -1013,11 +1052,15 @@ function App() {
         <header className="app-header">
           <div className="brand-row">
             <div className="brand-mark">
-              <ShoppingBasket size={24} aria-hidden="true" />
+              <MerkyLogo size={24} />
             </div>
             <div>
-              <p>Aplicacion de mercado</p>
+              <p>Hola, {session.user?.username || "usuario"}</p>
               <h1>Merky</h1>
+            </div>
+            <div className="user-pill" title={session.user?.username || "usuario"}>
+              <UserRound size={15} aria-hidden="true" />
+              <span>{(session.user?.username || "U").slice(0, 1).toUpperCase()}</span>
             </div>
             <button
               className="theme-button"
@@ -1100,6 +1143,37 @@ function App() {
               <div className="panel-title">
                 <LayoutDashboard size={20} aria-hidden="true" />
                 <h3>Resumen</h3>
+              </div>
+
+              <section className="summary-hero">
+                <div
+                  className="progress-ring"
+                  style={{ "--progress": `${shoppingProgress}%` }}
+                  aria-label={`Avance de compra ${shoppingProgress}%`}
+                >
+                  <strong>{shoppingProgress}%</strong>
+                  <span>avance</span>
+                </div>
+                <div className="summary-hero-copy">
+                  <p className="eyebrow">Lista activa</p>
+                  <h2>{activeList?.name || "Sin lista"}</h2>
+                  <span>{items.length ? `${totals.checked} comprados, ${items.length - totals.checked} pendientes` : "Sin productos pendientes"}</span>
+                </div>
+              </section>
+
+              <div className="insight-strip" aria-label="Indicadores rapidos">
+                <article>
+                  <span>Promedio</span>
+                  <strong>{currency.format(averageListPrice)}</strong>
+                </article>
+                <article>
+                  <span>En casa</span>
+                  <strong>{stockedProducts}</strong>
+                </article>
+                <article className={summary.lowStockCount ? "danger" : ""}>
+                  <span>Alertas</span>
+                  <strong>{summary.lowStockCount}</strong>
+                </article>
               </div>
 
               <div className="summary-grid">
@@ -1221,7 +1295,7 @@ function App() {
                   const isProductFormOpen = Boolean(productFormMenus[category.id]);
 
                   return (
-                    <article className="category-card" key={category.id}>
+                    <article className="category-card" key={category.id} style={getCategoryStyle(category.name)}>
                       <button
                         className="category-card-head"
                         type="button"
@@ -1680,7 +1754,7 @@ function App() {
               ) : (
                 <div className="product-list">
                   {Object.entries(groupedListItems).map(([categoryName, categoryItems]) => (
-                    <section className="list-category" key={categoryName}>
+                    <section className="list-category" key={categoryName} style={getCategoryStyle(categoryName)}>
                       <div className="list-category-head">
                         <strong>{categoryName}</strong>
                         <span>{categoryItems.filter((item) => item.checked).length} de {categoryItems.length}</span>
@@ -1741,7 +1815,7 @@ function App() {
                   const categoryInventory = groupedInventory[category.name] || [];
 
                   return (
-                    <article className="category-card" key={category.id}>
+                    <article className="category-card" key={category.id} style={getCategoryStyle(category.name)}>
                       <div className="category-card-head static-head">
                         <div>
                           <h4>{category.name}</h4>
@@ -1848,6 +1922,21 @@ function App() {
                 </div>
               </section>
 
+              <div className="shopping-focus-strip" aria-label="Resumen de compra actual">
+                <article>
+                  <span>Total</span>
+                  <strong>{currency.format(totals.amount)}</strong>
+                </article>
+                <article>
+                  <span>Pendientes</span>
+                  <strong>{items.length - totals.checked}</strong>
+                </article>
+                <article>
+                  <span>Comprados</span>
+                  <strong>{totals.checked}</strong>
+                </article>
+              </div>
+
               {items.length === 0 ? (
                 <div className="empty-state">
                   <ShoppingBasket size={40} aria-hidden="true" />
@@ -1857,7 +1946,7 @@ function App() {
               ) : (
                 <div className="shopping-category-list">
                   {Object.entries(groupedListItems).map(([categoryName, categoryItems]) => (
-                    <section className="shopping-category" key={categoryName}>
+                    <section className="shopping-category" key={categoryName} style={getCategoryStyle(categoryName)}>
                       <div className="shopping-category-head">
                         <strong>{categoryName}</strong>
                         <span>{categoryItems.filter((item) => item.checked).length}/{categoryItems.length}</span>
@@ -2072,3 +2161,4 @@ function App() {
 }
 
 export default App;
+
