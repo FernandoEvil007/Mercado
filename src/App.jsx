@@ -38,15 +38,23 @@ const dateFormatter = new Intl.DateTimeFormat("es-CO", {
 
 function getBaseCost(product) {
   const unit = product.unit;
-  const normalizedUnit = unit.toLowerCase();
+  const normalizedUnit = unit
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
   const quantity = Number(product.presentationQuantity || 1);
 
-  if (normalizedUnit.includes("kilo")) {
+  if (normalizedUnit.includes("kilo") || normalizedUnit === "kg") {
     return `${currency.format(product.price / (quantity * 1000))} por gramo`;
   }
 
-  if (normalizedUnit.includes("litro")) {
+  if (normalizedUnit.includes("litro") || normalizedUnit === "l" || normalizedUnit === "lt") {
     return `${currency.format(product.price / (quantity * 1000))} por ml`;
+  }
+
+  if (normalizedUnit.includes("mililitro") || normalizedUnit === "ml") {
+    return `${currency.format(product.price / quantity)} por ml`;
   }
 
   if (normalizedUnit.includes("gramo")) {
