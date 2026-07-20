@@ -297,6 +297,26 @@ h4 {
   white-space: nowrap;
 }
 
+.clear-list-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid color-mix(in srgb, var(--danger) 38%, var(--border));
+  border-radius: 12px;
+  padding: 0 11px;
+  background: color-mix(in srgb, var(--danger) 8%, var(--panel-solid));
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.clear-list-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .complete-purchase-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
@@ -400,7 +420,7 @@ h4 {
 
 .shopping-item {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) minmax(86px, 0.45fr) 64px;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(78px, 0.42fr) minmax(82px, 0.42fr) 58px;
   gap: 9px;
   align-items: center;
   min-height: 70px;
@@ -420,7 +440,8 @@ h4 {
 }
 
 .shopping-item-main,
-.shopping-previous-price {
+.shopping-previous-price,
+.shopping-current-price {
   display: grid;
   gap: 3px;
   min-width: 0;
@@ -429,7 +450,8 @@ h4 {
 .shopping-item-main strong,
 .shopping-item-main span,
 .shopping-previous-price strong,
-.shopping-previous-price span {
+.shopping-previous-price span,
+.shopping-current-price {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -441,7 +463,8 @@ h4 {
 }
 
 .shopping-item-main span,
-.shopping-previous-price span {
+.shopping-previous-price span,
+.shopping-current-price {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 800;
@@ -450,6 +473,13 @@ h4 {
 .shopping-previous-price strong {
   color: var(--text-strong);
   font-size: 0.84rem;
+  text-align: right;
+}
+
+.shopping-current-price input {
+  min-height: 36px;
+  padding: 0 7px;
+  border-radius: 10px;
   text-align: right;
 }
 
@@ -1472,6 +1502,11 @@ select:focus {
   .shopping-previous-price {
     grid-column: 2 / -1;
     grid-row: 2;
+  }
+
+  .shopping-current-price {
+    grid-column: 2 / 3;
+    grid-row: 3;
   }
 
   .product-row .icon-button {

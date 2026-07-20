@@ -884,12 +884,30 @@ app.post("/api/lists/:listId/complete", async (request, response) => {
   });
 });
 
+app.post("/api/lists/:listId/clear", async (request, response) => {
+  const listId = Number(request.params.listId);
+  const list = await db.get("SELECT id FROM shopping_lists WHERE id = ?", listId);
+
+  if (!list) {
+    response.status(404).json({ error: "List not found." });
+    return;
+  }
+
+  await db.run("DELETE FROM list_items WHERE list_id = ?", listId);
+  await db.run("UPDATE shopping_lists SET completed_at = NULL, completed_total = NULL WHERE id = ?", listId);
+
+  response.json({
+    items: [],
+    lists: await db.all("SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC"),
+  });
+});
+
 app.delete("/api/lists/:listId", async (request, response) => {
   const listId = Number(request.params.listId);
   await db.run("DELETE FROM shopping_lists WHERE id = ?", listId);
 
   const lists = await db.all(
-    "SELECT id, name, created_at AS createdAt FROM shopping_lists ORDER BY id DESC",
+    "SELECT id, name, completed_at AS completedAt, completed_total AS completedTotal, created_at AS createdAt FROM shopping_lists ORDER BY id DESC",
   );
   const activeListId = lists[0]?.id ?? null;
   const items = activeListId ? await getListItems(activeListId) : [];
@@ -945,6 +963,16 @@ app.patch("/api/list-items/:itemId", async (request, response) => {
   if (request.body.quantity !== undefined) {
     const quantity = Math.max(1, Number(request.body.quantity));
     await db.run("UPDATE list_items SET quantity = ? WHERE id = ?", quantity, itemId);
+  }
+
+  if (request.body.price !== undefined) {
+    const price = Number(request.body.price);
+    if (Number.isNaN(price) || price < 0) {
+      response.status(400).json({ error: "Valid price is required." });
+      return;
+    }
+
+    await db.run("UPDATE list_items SET price_snapshot = ? WHERE id = ?", price, itemId);
   }
 
   response.json({ items: await getListItems(item.listId) });

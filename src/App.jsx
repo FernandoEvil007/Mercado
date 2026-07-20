@@ -121,6 +121,7 @@ function App() {
   const [brandDrafts, setBrandDrafts] = useState({});
   const [brandMenus, setBrandMenus] = useState({});
   const [nameDrafts, setNameDrafts] = useState({});
+  const [itemPriceDrafts, setItemPriceDrafts] = useState({});
   const [priceDrafts, setPriceDrafts] = useState({});
   const [presentationQuantityDrafts, setPresentationQuantityDrafts] = useState({});
   const [unitDrafts, setUnitDrafts] = useState({});
@@ -508,12 +509,34 @@ function App() {
     setToast("Compra guardada en el registro");
   }
 
+  async function clearCurrentList() {
+    if (!activeListId || items.length === 0) {
+      return;
+    }
+
+    const shouldClear = window.confirm("Limpiar esta lista para volver a usarla?");
+    if (!shouldClear) {
+      return;
+    }
+
+    const data = await api(`/lists/${activeListId}/clear`, { method: "POST" });
+    setItems(data.items || []);
+    setLists(data.lists || lists);
+    setItemPriceDrafts({});
+    setActiveView("catalog");
+    setToast("Lista limpia y lista para reutilizar");
+  }
+
   function exportBackup() {
     window.open(`${API_URL}/export`, "_blank", "noopener,noreferrer");
   }
 
   function updatePriceDraft(productId, value) {
     setPriceDrafts((current) => ({ ...current, [productId]: value }));
+  }
+
+  function updateItemPriceDraft(itemId, value) {
+    setItemPriceDrafts((current) => ({ ...current, [itemId]: value }));
   }
 
   function updateNameDraft(productId, value) {
@@ -621,6 +644,11 @@ function App() {
   async function removeItem(itemId) {
     const data = await api(`/list-items/${itemId}`, { method: "DELETE" });
     setItems(data.items);
+    setItemPriceDrafts((current) => {
+      const next = { ...current };
+      delete next[itemId];
+      return next;
+    });
   }
 
   async function deleteProduct(product) {
@@ -1442,6 +1470,14 @@ function App() {
                 >
                   Guardar compra
                 </button>
+                <button
+                  className="clear-list-button"
+                  type="button"
+                  onClick={clearCurrentList}
+                  disabled={items.length === 0 || (!canCompletePurchase && !activeList?.completedAt)}
+                >
+                  Limpiar
+                </button>
               </div>
 
               <section className="shopping-progress" aria-label="Avance de compras">
@@ -1622,6 +1658,14 @@ function App() {
                 >
                   Guardar
                 </button>
+                <button
+                  className="clear-list-button"
+                  type="button"
+                  onClick={clearCurrentList}
+                  disabled={items.length === 0 || (!canCompletePurchase && !activeList?.completedAt)}
+                >
+                  Limpiar
+                </button>
               </div>
 
               <section className="shopping-progress compact" aria-label="Avance de compras">
@@ -1670,6 +1714,32 @@ function App() {
                                 : "Sin anterior"}
                             </strong>
                           </div>
+                          <label className="shopping-current-price">
+                            Actual
+                            <input
+                              value={itemPriceDrafts[item.id] ?? item.price}
+                              onChange={(event) => updateItemPriceDraft(item.id, event.target.value)}
+                              onBlur={() => {
+                                const draftPrice = itemPriceDrafts[item.id];
+                                if (draftPrice !== undefined && draftPrice !== "") {
+                                  updateItem(item.id, { price: draftPrice });
+                                  updateItemPriceDraft(item.id, undefined);
+                                  return;
+                                }
+
+                                updateItemPriceDraft(item.id, undefined);
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                  event.currentTarget.blur();
+                                }
+                              }}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              aria-label={`Precio actual de ${item.name}`}
+                            />
+                          </label>
                           <input
                             className="quantity-input shopping-quantity"
                             value={item.quantity}
