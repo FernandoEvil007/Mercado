@@ -1,4 +1,4 @@
-const CACHE_NAME = "mercardo-app-v1";
+const CACHE_NAME = "mercardo-app-v2";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",

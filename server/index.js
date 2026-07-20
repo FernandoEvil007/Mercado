@@ -368,6 +368,15 @@ app.get("/api/bootstrap", async (_request, response) => {
   response.json({ categories, products, lists, activeListId, items, priceHistory, inventory, units, summary });
 });
 
+app.get("/api/health", async (_request, response) => {
+  const productCount = await db.get("SELECT COUNT(*) AS total FROM products");
+  response.json({
+    ok: true,
+    database: path.relative(path.join(__dirname, ".."), dbPath),
+    products: productCount.total,
+  });
+});
+
 app.get("/api/summary", async (request, response) => {
   const listId = Number(request.query.listId);
   response.json({ summary: await getSummary(listId || null) });
