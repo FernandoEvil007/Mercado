@@ -1255,12 +1255,12 @@ function App() {
                       <div className="inventory-products">
                         {categoryInventory.map((product) => (
                           <div className="inventory-row" key={product.id}>
-                            <div>
+                            <div className="inventory-product-info">
                               <strong>{product.name}</strong>
                               <span>{[product.brand, getPresentationLabel(product)].filter(Boolean).join(" - ")}</span>
                             </div>
                             <label className="inventory-editor">
-                              Tengo
+                              Existencia
                               <input
                                 value={inventoryDrafts[product.id] ?? product.quantity}
                                 onChange={(event) => updateInventoryDraft(product.id, event.target.value)}

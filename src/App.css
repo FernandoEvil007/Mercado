@@ -954,11 +954,20 @@ select:focus {
   min-width: 0;
 }
 
+.inventory-product-info {
+  padding-bottom: 2px;
+}
+
 .inventory-row strong,
 .inventory-row span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.inventory-row strong {
+  color: var(--text-strong);
+  font-size: 0.98rem;
 }
 
 .inventory-row span,
@@ -986,6 +995,10 @@ select:focus {
 @media (min-width: 520px) {
   .inventory-row {
     grid-template-columns: minmax(0, 1fr) minmax(96px, 0.45fr) minmax(96px, 0.45fr) minmax(122px, 0.6fr) 48px;
+  }
+
+  .inventory-product-info {
+    padding-bottom: 0;
   }
 }
 
