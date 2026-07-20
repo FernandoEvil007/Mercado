@@ -449,6 +449,29 @@ app.patch("/api/products/:productId", async (request, response) => {
   response.json({ products: await getProducts(), priceHistory: await getPriceHistory(), inventory: await getInventory() });
 });
 
+app.delete("/api/products/:productId", async (request, response) => {
+  const productId = Number(request.params.productId);
+
+  if (!productId) {
+    response.status(400).json({ error: "Valid product is required." });
+    return;
+  }
+
+  const product = await db.get("SELECT id FROM products WHERE id = ?", productId);
+  if (!product) {
+    response.status(404).json({ error: "Product not found." });
+    return;
+  }
+
+  await db.run("DELETE FROM products WHERE id = ?", productId);
+
+  response.json({
+    products: await getProducts(),
+    priceHistory: await getPriceHistory(),
+    inventory: await getInventory(),
+  });
+});
+
 app.patch("/api/inventory/:productId", async (request, response) => {
   const productId = Number(request.params.productId);
   const quantity = Number(request.body.quantity);

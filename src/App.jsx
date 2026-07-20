@@ -405,6 +405,35 @@ function App() {
     setItems(data.items);
   }
 
+  async function deleteProduct(product) {
+    const shouldDelete = window.confirm(`Eliminar ${product.name} del catalogo e inventario?`);
+    if (!shouldDelete) {
+      return;
+    }
+
+    const data = await api(`/products/${product.id}`, { method: "DELETE" });
+    setProducts(data.products);
+    setInventory(data.inventory || []);
+    setPriceHistory(data.priceHistory || []);
+    setItems((current) => current.filter((item) => item.productId !== product.id));
+    setInventoryDrafts((current) => {
+      const next = { ...current };
+      delete next[product.id];
+      return next;
+    });
+    setPriceDrafts((current) => {
+      const next = { ...current };
+      delete next[product.id];
+      return next;
+    });
+    setPresentationQuantityDrafts((current) => {
+      const next = { ...current };
+      delete next[product.id];
+      return next;
+    });
+    setToast(`${product.name} eliminado`);
+  }
+
   function updateInventoryDraft(productId, value) {
     setInventoryDrafts((current) => ({ ...current, [productId]: value }));
   }
@@ -1056,6 +1085,14 @@ function App() {
                                 ))}
                               </select>
                             </label>
+                            <button
+                              className="icon-button inventory-delete"
+                              type="button"
+                              onClick={() => deleteProduct(product)}
+                              aria-label={`Eliminar ${product.name}`}
+                            >
+                              <Trash2 size={18} aria-hidden="true" />
+                            </button>
                           </div>
                         ))}
                       </div>
