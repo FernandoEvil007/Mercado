@@ -532,6 +532,26 @@ select:focus {
   background: var(--panel-soft);
 }
 
+.category-name-editor {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.category-name-editor input {
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  text-align: right;
+}
+
 .static-head {
   cursor: default;
 }

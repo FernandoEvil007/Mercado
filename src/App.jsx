@@ -105,6 +105,7 @@ function App() {
   const [priceHistory, setPriceHistory] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [units, setUnits] = useState(fallbackUnits.map((name, index) => ({ id: `fallback-${index}`, name })));
+  const [categoryDrafts, setCategoryDrafts] = useState({});
   const [inventoryDrafts, setInventoryDrafts] = useState({});
   const [productDrafts, setProductDrafts] = useState({});
   const [brandDrafts, setBrandDrafts] = useState({});
@@ -238,6 +239,34 @@ function App() {
     setCategoryName("");
     setShowCategoryCreator(false);
     setToast(`Categoria ${category.name} lista`);
+  }
+
+  function updateCategoryDraft(categoryId, value) {
+    setCategoryDrafts((current) => ({ ...current, [categoryId]: value }));
+  }
+
+  async function saveCategoryName(category) {
+    const name = (categoryDrafts[category.id] ?? category.name).trim();
+    if (!name || name === category.name) {
+      updateCategoryDraft(category.id, undefined);
+      return;
+    }
+
+    const data = await api(`/categories/${category.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    });
+    setCategories(data.categories);
+    setProducts(data.products);
+    setPriceHistory(data.priceHistory || priceHistory);
+    setInventory(data.inventory || inventory);
+    setItems((current) =>
+      current.map((item) =>
+        item.category === category.name ? { ...item, category: name } : item,
+      ),
+    );
+    updateCategoryDraft(category.id, undefined);
+    setToast(`${category.name} ahora es ${name}`);
   }
 
   function updateProductDraft(categoryId, updates) {
@@ -759,6 +788,20 @@ function App() {
                       </button>
                       {isExpanded ? (
                         <>
+                          <label className="category-name-editor">
+                            Categoria
+                            <input
+                              value={categoryDrafts[category.id] ?? category.name}
+                              onChange={(event) => updateCategoryDraft(category.id, event.target.value)}
+                              onBlur={() => saveCategoryName(category)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                  event.currentTarget.blur();
+                                }
+                              }}
+                              aria-label={`Cambiar nombre de categoria ${category.name}`}
+                            />
+                          </label>
                           <button
                             className="category-action-trigger"
                             type="button"

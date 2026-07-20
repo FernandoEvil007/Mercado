@@ -352,6 +352,41 @@ app.post("/api/categories", async (request, response) => {
   response.status(201).json(category);
 });
 
+app.patch("/api/categories/:categoryId", async (request, response) => {
+  const categoryId = Number(request.params.categoryId);
+  const name = normalizeText(request.body.name);
+
+  if (!categoryId || !name) {
+    response.status(400).json({ error: "Valid category and name are required." });
+    return;
+  }
+
+  const category = await db.get("SELECT id, name FROM categories WHERE id = ?", categoryId);
+  if (!category) {
+    response.status(404).json({ error: "Category not found." });
+    return;
+  }
+
+  const duplicate = await db.get(
+    "SELECT id FROM categories WHERE name = ? AND id <> ?",
+    name,
+    categoryId,
+  );
+  if (duplicate) {
+    response.status(409).json({ error: "Category already exists." });
+    return;
+  }
+
+  await db.run("UPDATE categories SET name = ? WHERE id = ?", name, categoryId);
+
+  response.json({
+    categories: await db.all("SELECT id, name FROM categories ORDER BY name"),
+    products: await getProducts(),
+    priceHistory: await getPriceHistory(),
+    inventory: await getInventory(),
+  });
+});
+
 app.post("/api/products", async (request, response) => {
   const name = normalizeText(request.body.name);
   const brand = normalizeText(request.body.brand);
