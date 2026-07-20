@@ -1904,6 +1904,13 @@ select:focus {
   font-size: 1.08rem;
 }
 
+.compact-empty {
+  min-height: 180px;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  background: var(--panel-solid);
+}
+
 .list-tab {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 42px;

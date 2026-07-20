@@ -282,6 +282,14 @@ function App() {
     );
   }, [products, query]);
   const groupedProducts = useMemo(() => groupByCategory(filteredProducts), [filteredProducts]);
+  const visibleCatalogCategories = useMemo(() => {
+    const hasSearch = query.trim().length > 0;
+    if (!hasSearch) {
+      return categories;
+    }
+
+    return categories.filter((category) => (groupedProducts[category.name] || []).length > 0);
+  }, [categories, groupedProducts, query]);
   const unitOptions = useMemo(() => units.map((unit) => unit.name), [units]);
   const inventoryByProduct = useMemo(
     () =>
@@ -1473,7 +1481,14 @@ function App() {
               </div>
 
               <div className="category-stack">
-                {categories.map((category) => {
+                {visibleCatalogCategories.length === 0 ? (
+                  <div className="empty-state compact-empty">
+                    <Search size={34} aria-hidden="true" />
+                    <strong>Sin resultados</strong>
+                    <span>No hay productos que coincidan con tu busqueda.</span>
+                  </div>
+                ) : null}
+                {visibleCatalogCategories.map((category) => {
                   const categoryProducts = groupedProducts[category.name] || [];
                   const draft = productDrafts[category.id] || emptyProductDraft;
                   const draftUnit = unitOptions.includes(draft.unit) ? draft.unit : unitOptions[0] || "unidad";
